@@ -112,7 +112,7 @@ public class PlayerMovement : MonoBehaviour
         }
         else if (isWallRunning)
         {
-            velocity.y -= gravity * 0.5f * Time.deltaTime;
+            velocity.y -= gravity * 2f * Time.deltaTime;
         }
         else
         {
