@@ -721,36 +721,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 492243293}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &2123196753 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 4063178079389742273, guid: f43465712efcb9c42bafa2fbe2a46fde, type: 3}
-  m_PrefabInstance: {fileID: 3793689433888362723}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &2123196756
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2123196753}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8b17ebe9db844684c97b02437b1e4022, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  roomPrefabs: []
-  corridorStraightPrefab: {fileID: 0}
-  corridorCornerPrefab: {fileID: 0}
-  minRooms: 4
-  maxRooms: 8
-  seed: 0
-  cellSize: 4
-  maxCorridorStraightLen: 3
-  maxCorridorTurnFirstLen: 2
-  maxCorridorTurnSecondLen: 2
-  maxAttemptsPerRoom: 200
-  maxRestarts: 5
-  generateOnStart: 1
 --- !u!1001 &3793689433888362723
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -807,10 +777,7 @@ PrefabInstance:
     - {fileID: 264372313553521279, guid: f43465712efcb9c42bafa2fbe2a46fde, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 4063178079389742273, guid: f43465712efcb9c42bafa2fbe2a46fde, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2123196756}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: f43465712efcb9c42bafa2fbe2a46fde, type: 3}
 --- !u!1001 &7331537792923665444
 PrefabInstance:
