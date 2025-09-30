@@ -67,6 +67,7 @@ public class ArmMount : MonoBehaviour
 
         attachedWeapons[slot] = instance;
         instance.Equip();
+        Debug.Log("Equip");
 
 
         return slot;

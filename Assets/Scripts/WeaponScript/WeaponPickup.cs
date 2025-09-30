@@ -50,6 +50,7 @@ public class WeaponPickup : MonoBehaviour
 
         if (Input.GetKeyDown(interactKey))
         {
+            Debug.Log("Interacted");
             int slot = nearbyArm.AttachWeapon(weaponPrefab);
             if (slot >= 0)
             {
