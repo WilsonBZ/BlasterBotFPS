@@ -66,7 +66,6 @@ public class SimpleDungeonGenerator : MonoBehaviour
     [ContextMenu("Clear Dungeon")]
     public void ClearDungeon()
     {
-        // Clear rooms
         foreach (var room in placedRooms)
         {
             if (room.instance != null)
@@ -74,7 +73,6 @@ public class SimpleDungeonGenerator : MonoBehaviour
         }
         placedRooms.Clear();
 
-        // Clear corridors
         foreach (var corridor in corridorPieces)
         {
             if (corridor != null)
@@ -89,11 +87,9 @@ public class SimpleDungeonGenerator : MonoBehaviour
     {
         int targetRoomCount = rng.Next(minRooms, maxRooms + 1);
 
-        // Place start room
         if (!PlaceStartRoom())
             return false;
 
-        // Place subsequent rooms
         for (int i = 1; i < targetRoomCount; i++)
         {
             bool isEndRoom = (i == targetRoomCount - 1);
@@ -130,18 +126,14 @@ public class SimpleDungeonGenerator : MonoBehaviour
     {
         for (int attempt = 0; attempt < maxAttemptsPerRoom; attempt++)
         {
-            // Pick a random existing room that has available doors
             var sourceRoom = GetRandomRoomWithAvailableDoors();
             if (sourceRoom == null)
                 return false;
 
-            // Pick a random available door from the source room
             var exitDirection = sourceRoom.GetRandomAvailableDoor(rng);
 
-            // Try to place the new room
             if (TryPlaceRoomFromDoor(sourceRoom, exitDirection, isEndRoom, out PlacedRoom newRoom))
             {
-                // Connect with corridor
                 if (CreateCorridorBetweenRooms(sourceRoom, exitDirection, newRoom))
                 {
                     sourceRoom.usedDoors.Add(exitDirection);
@@ -150,7 +142,6 @@ public class SimpleDungeonGenerator : MonoBehaviour
                 }
                 else
                 {
-                    // Clean up if corridor failed
                     if (newRoom.instance != null)
                         DestroyImmediate(newRoom.instance);
                 }
@@ -164,33 +155,30 @@ public class SimpleDungeonGenerator : MonoBehaviour
     {
         newRoom = null;
 
-        // Get room templates for the target room type
         var availableTemplates = isEndRoom ? endRooms : normalRooms;
         if (availableTemplates.Count == 0)
             return false;
 
-        // Calculate potential positions (straight and L-shapes)
         var exitPos = GetDoorWorldPosition(sourceRoom, exitDirection);
         var requiredEntranceDirection = exitDirection.Opposite();
 
-        // Try different corridor lengths and shapes
         for (int straightLength = 1; straightLength <= 3; straightLength++)
         {
-            for (int turnType = 0; turnType < 3; turnType++) // 0=straight, 1=left, 2=right
+            for (int turnType = 0; turnType < 3; turnType++) 
             {
                 Vector3Int targetPos;
                 Direction entranceDir;
 
-                if (turnType == 0) // Straight
+                if (turnType == 0) 
                 {
                     targetPos = exitPos + exitDirection.ToVector3Int() * (straightLength + 1);
                     entranceDir = requiredEntranceDirection;
                 }
-                else // L-shape
+                else 
                 {
                     Direction turnDirection = (turnType == 1) ?
-                        RotateDirection(exitDirection, -1) : // Left
-                        RotateDirection(exitDirection, 1);   // Right
+                        RotateDirection(exitDirection, -1) : 
+                        RotateDirection(exitDirection, 1);   
 
                     targetPos = exitPos +
                                exitDirection.ToVector3Int() * straightLength +
@@ -198,12 +186,10 @@ public class SimpleDungeonGenerator : MonoBehaviour
                     entranceDir = turnDirection.Opposite();
                 }
 
-                // Try each template
                 foreach (var template in availableTemplates)
                 {
                     if (template.availableDoors.Contains(entranceDir))
                     {
-                        // Adjust position based on room size and entrance
                         Vector3Int adjustedPos = AdjustRoomPosition(targetPos, entranceDir, template.size);
 
                         if (CanPlaceRoom(adjustedPos, template.size))
@@ -227,15 +213,12 @@ public class SimpleDungeonGenerator : MonoBehaviour
             var startPos = GetDoorWorldPosition(roomA, dirFromA);
             var endPos = GetDoorWorldPosition(roomB, dirFromA.Opposite());
 
-            // Create straight or L-shaped corridor
             if (startPos.x == endPos.x || startPos.z == endPos.z)
             {
-                // Straight corridor
                 CreateStraightCorridor(startPos, endPos);
             }
             else
             {
-                // L-shaped corridor
                 CreateLShapedCorridor(startPos, endPos);
             }
 
@@ -250,7 +233,6 @@ public class SimpleDungeonGenerator : MonoBehaviour
 
     private void CreateStraightCorridor(Vector3Int start, Vector3Int end)
     {
-        // Calculate direction and distance
         Vector3Int difference = end - start;
         Vector3Int direction = new Vector3Int(
             difference.x != 0 ? Math.Sign(difference.x) : 0,
@@ -275,10 +257,8 @@ public class SimpleDungeonGenerator : MonoBehaviour
 
     private void CreateLShapedCorridor(Vector3Int start, Vector3Int end)
     {
-        // Choose corner position (go horizontal first, then vertical)
         Vector3Int corner = new Vector3Int(end.x, 0, start.z);
 
-        // First segment (horizontal)
         int xStep = Math.Sign(end.x - start.x);
         for (int x = start.x + xStep; x != end.x; x += xStep)
         {
@@ -290,14 +270,12 @@ public class SimpleDungeonGenerator : MonoBehaviour
             occupiedCells.Add(pos);
         }
 
-        // Corner piece
         int zStep = Math.Sign(end.z - start.z);
         Quaternion cornerRot = GetCornerRotation(new Vector3Int(xStep, 0, 0), new Vector3Int(0, 0, zStep));
         var cornerPiece = Instantiate(cornerCorridorPrefab, GridToWorld(corner), cornerRot, transform);
         corridorPieces.Add(cornerPiece);
         occupiedCells.Add(corner);
 
-        // Second segment (vertical)
         for (int z = start.z + zStep; z != end.z; z += zStep)
         {
             Vector3Int pos = new Vector3Int(end.x, 0, z);
@@ -323,7 +301,6 @@ public class SimpleDungeonGenerator : MonoBehaviour
         return Quaternion.identity;
     }
 
-    // Helper methods
     private PlacedRoom GetRandomRoomWithAvailableDoors()
     {
         var availableRooms = new List<PlacedRoom>();
@@ -337,7 +314,6 @@ public class SimpleDungeonGenerator : MonoBehaviour
 
     private Vector3Int GetDoorWorldPosition(PlacedRoom room, Direction doorDirection)
     {
-        // Simple implementation - door is on the edge of the room
         var roomCenter = room.gridPosition + new Vector3Int(room.template.size.x / 2, 0, room.template.size.y / 2);
         var doorOffset = doorDirection.ToVector3Int() * (Math.Max(room.template.size.x, room.template.size.y) / 2);
         return roomCenter + doorOffset;
@@ -345,7 +321,6 @@ public class SimpleDungeonGenerator : MonoBehaviour
 
     private Vector3Int AdjustRoomPosition(Vector3Int targetPos, Direction entranceDir, Vector2Int roomSize)
     {
-        // Adjust so the entrance aligns with the target position
         var entranceOffset = entranceDir.Opposite().ToVector3Int() * (roomSize.x / 2);
         return targetPos + entranceOffset;
     }
