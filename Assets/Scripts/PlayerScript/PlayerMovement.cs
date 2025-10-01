@@ -55,6 +55,11 @@ public class PlayerMovement : MonoBehaviour
         HandleGravity();
         HandleSliding();
 
+        if (Input.GetButtonDown("Fire1"))
+        {
+            GetComponentInChildren<ArmMount>().FireAll();
+        }
+
         controller.Move(velocity * Time.deltaTime);
     }
 
