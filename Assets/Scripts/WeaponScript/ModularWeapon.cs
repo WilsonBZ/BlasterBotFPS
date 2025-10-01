@@ -218,7 +218,7 @@ public class ModularWeapon : MonoBehaviour
         if (playerCamera == null) yield break;
 
 
-        Vector3 originalCamPos = playerCamera.transform.localPosition;
+        //Vector3 originalCamPos = playerCamera.transform.localPosition;
         float elapsed = 0f;
 
 
@@ -228,7 +228,7 @@ public class ModularWeapon : MonoBehaviour
             float y = Random.Range(0f, 2f) * magnitude;
 
 
-            playerCamera.transform.localPosition = originalCamPos + new Vector3(x, y, 0);
+            //playerCamera.transform.localPosition = originalCamPos + new Vector3(x, y, 0);
 
 
             elapsed += Time.deltaTime;
@@ -236,7 +236,7 @@ public class ModularWeapon : MonoBehaviour
         }
 
 
-        playerCamera.transform.localPosition = originalCamPos;
+        //playerCamera.transform.localPosition = originalCamPos;
     }
 
     protected virtual void HandleRecoilRecovery()

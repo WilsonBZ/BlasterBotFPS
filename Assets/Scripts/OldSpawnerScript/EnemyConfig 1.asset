@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: EnemyConfig 1
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyConfig
+  isRanged: 1
+  preferredDistance: 10
+  fireCooldown: 1.5
+  projectilePrefab: {fileID: 0}
+  canExplode: 1
+  explosionRange: 2
+  explosionDamage: 50
+  explosionForce: 10
+  maxHealth: 100
+  moveSpeed: 3.5
+  acceleration: 8
+  detectionRange: 15
+  chaseRange: 20
+  fleeDistance: 10
+  fleeDuration: 3
+  fleeOnHit: 1
+  attackDamage: 15
+  attackRange: 2
+  attackRadius: 1.5
+  attackCooldown: 2
+  deathCleanupTime: 3

@@ -53,7 +53,7 @@ public class PlayerMovement : MonoBehaviour
         HandleInput();
         HandleMovement();
         HandleGravity();
-        HandleSliding();
+        //HandleSliding();
 
         if (Input.GetButtonDown("Fire1"))
         {
