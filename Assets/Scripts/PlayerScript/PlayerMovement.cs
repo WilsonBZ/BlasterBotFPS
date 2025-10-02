@@ -55,7 +55,7 @@ public class PlayerMovement : MonoBehaviour
         HandleGravity();
         //HandleSliding();
 
-        if (Input.GetButtonDown("Fire1"))
+        if (Input.GetButton("Fire1"))
         {
             GetComponentInChildren<ArmMount>().FireAll();
         }
