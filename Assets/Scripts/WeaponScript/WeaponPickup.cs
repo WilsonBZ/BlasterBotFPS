@@ -42,7 +42,6 @@ public class WeaponPickup : MonoBehaviour
         }
     }
 
-
     private void Update()
     {
         if (!playerNearby || nearbyArm == null || weaponPrefab == null) return;
@@ -50,11 +49,10 @@ public class WeaponPickup : MonoBehaviour
 
         if (Input.GetKeyDown(interactKey))
         {
-            Debug.Log("Interacted");
             int slot = nearbyArm.AttachWeapon(weaponPrefab);
             if (slot >= 0)
             {
-                Destroy(gameObject); 
+                Destroy(gameObject); // picked up, destroy pickup
             }
             else
             {
@@ -63,4 +61,3 @@ public class WeaponPickup : MonoBehaviour
         }
     }
 }
-

@@ -1,5 +1,6 @@
 using UnityEngine;
 
+
 public class ArmBattery : MonoBehaviour
 {
     [SerializeField] private float maxCharge = 100f;
@@ -28,6 +29,7 @@ public class ArmBattery : MonoBehaviour
         }
     }
 
+
     public bool Consume(float amount)
     {
         if (amount <= 0f) return true;
@@ -40,13 +42,8 @@ public class ArmBattery : MonoBehaviour
         return false;
     }
 
-
     public float GetCurrentCharge() => currentCharge;
     public float GetMaxCharge() => maxCharge;
-
-
     public float GetChargePercent() => (maxCharge <= 0f) ? 0f : (currentCharge / maxCharge);
-
-
     public void Refill() => currentCharge = maxCharge;
 }

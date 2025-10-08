@@ -341,21 +341,21 @@ public class Enemy : BaseEnemy, IDamageable
         }
     }
 
-    private void OnDrawGizmosSelected()
-    {
-        // Visualization
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, config.detectionRange);
+    //private void OnDrawGizmosSelected()
+    //{
+    //    // Visualization
+    //    Gizmos.color = Color.red;
+    //    Gizmos.DrawWireSphere(transform.position, config.detectionRange);
 
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, config.chaseRange);
+    //    Gizmos.color = Color.yellow;
+    //    Gizmos.DrawWireSphere(transform.position, config.chaseRange);
 
-        if (attackPoint)
-        {
-            Gizmos.color = Color.magenta;
-            Gizmos.DrawWireSphere(attackPoint.position, config.attackRadius);
-        }
-    }
+    //    if (attackPoint)
+    //    {
+    //        Gizmos.color = Color.magenta;
+    //        Gizmos.DrawWireSphere(attackPoint.position, config.attackRadius);
+    //    }
+    //}
 }
 
 public enum EnemyState
