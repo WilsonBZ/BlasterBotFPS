@@ -22,17 +22,27 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float gravity = 9.81f;
     [SerializeField] private int maxAirJumps = 1;
 
+    [Header("CeilingCling Setting")]
+    [SerializeField] private float ceilingClingDuration = 1f;
+    [SerializeField] private float ceilingClingCooldown = 1f;
+    [SerializeField] private float ceilingClingSpeed = 0.5f;
+
     [Header("Slide Settings")]
     [SerializeField] private float slideSpeed = 20f;
+    //[SerializeField] private float maxSlideSpeed = 25f;
     [SerializeField] private float slideDuration = 1f;
     [SerializeField] private float slideCooldown = 0.5f;
+
+    
 
     private CharacterController controller;
     private Vector3 velocity;
     private Vector3 moveDirection;
+    private bool isCeilingClinging;
     private bool isGrounded;
     private bool isSliding;
     private bool isWallRunning;
+    private float ceilingClingTimeRemaining;
     private float slideTimeRemaining;
     private float slideCooldownRemaining;
     private int airJumpsRemaining;
@@ -53,7 +63,7 @@ public class PlayerMovement : MonoBehaviour
         HandleInput();
         HandleMovement();
         HandleGravity();
-        //HandleSliding();
+        HandleSliding();
 
        
         controller.Move(velocity * Time.deltaTime);
@@ -121,6 +131,43 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    private void HandleCeilingCling()
+    {
+        if (Input.GetKeyDown(KeyCode.C) && !isGrounded && ceilingClingTimeRemaining <= 0)
+        {
+            isCeilingClinging = true;
+            ceilingClingTimeRemaining = ceilingClingDuration;
+
+            Vector3 clingDirection = transform.forward; 
+
+            if (velocity.magnitude > 0.1f)
+            {
+                clingDirection = velocity.normalized;
+            }
+            velocity = clingDirection * (ceilingClingSpeed * 2f);
+
+        }
+
+        if (isCeilingClinging)
+        {
+           Debug.Log(message: "IS ceiling clinging");
+            ceilingClingTimeRemaining -= Time.deltaTime;
+            if (ceilingClingTimeRemaining <= 0 || isGrounded || velocity.magnitude < walkSpeed)
+            {
+                isCeilingClinging = false;
+                ceilingClingTimeRemaining = ceilingClingCooldown;
+            }
+            else
+            {
+                if(ceilingClingTimeRemaining > 0)
+                {
+                    ceilingClingTimeRemaining -= Time.deltaTime;
+                }
+            }
+        }
+    }
+
+
     private void HandleSliding()
     {
         if (Input.GetKeyDown(KeyCode.LeftShift) && isGrounded && slideCooldownRemaining <= 0)
@@ -161,7 +208,7 @@ public class PlayerMovement : MonoBehaviour
                 slideCooldownRemaining = slideCooldown;
             }
         }
-        else
+        else 
         {
             if (TryGetComponent<MouseMovement>(out var cam))
             {
