@@ -48,22 +48,13 @@ MonoBehaviour:
   pellets: 2
   spreadAngle: 2
   fireRate: 10
-  reloadTime: 1.5
-  maxAmmo: 10
+  energyCostPerShot: 20
+  firePoint: {fileID: 480899695057680528}
   projectilePrefab: {fileID: 8184155314046719719, guid: ae6f733ff470385429cb9dd18b79b0cf, type: 3}
-  energyCostPerShot: 0
-  isAutomatic: 1
-  onEmptyAction: 1
-  dropForce: 10
-  dropUpForce: 3
+  useCrosshairWhenCentered: 1
   muzzleFlash: {fileID: 0}
   audioSource: {fileID: 0}
   shootSound: {fileID: 0}
-  firePoint: {fileID: 480899695057680528}
-  weaponPivot: {fileID: 1305578174453913677}
-  isMainGun: 1
-  applyRecoil: 0
-  debugLogs: 1
 --- !u!1 &8233450819758404311
 GameObject:
   m_ObjectHideFlags: 0

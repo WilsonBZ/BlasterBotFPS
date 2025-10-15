@@ -1,233 +1,164 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-
 [DisallowMultipleComponent]
 public class ArmMount : MonoBehaviour
 {
-    [Tooltip("Transforms that represent the N slots on the ring. If empty the script auto-creates slots on Awake.")]
-    [SerializeField] private Transform[] slotPoints;
+    [Header("Slots / Ring")]
+    [Tooltip("If empty, slots will be auto-generated across the specified arc")]
+    public Transform[] slotPoints;
+    public Transform weaponsParent; 
+    public int slotCount = 7;       
+    [Tooltip("Total arc in degrees across which the slots live (e.g., 180 => forward hemisphere)")]
+    public float arcDegrees = 180f;
+    [Tooltip("Radius for auto-generated slots")]
+    public float radius = 0.9f;
 
+    [Header("Battery")]
+    public ArmBattery battery;
+    [Tooltip("How much more battery the center gun consumes (multiplier)")]
+    public float centerMultiplier = 1.5f;
 
-    [Tooltip("Parent transform under which weapon instances will be created/parented. Typically a child of the player.")]
-    [SerializeField] private Transform weaponsParent;
+    [Header("Input")]
+    public bool handleInput = true;
+    public KeyCode rotateClockwiseKey = KeyCode.Q;
+    public KeyCode rotateCounterClockwiseKey = KeyCode.E;
+    public KeyCode tossCenterKey = KeyCode.G;
 
+    List<ModularWeapon> attached = new List<ModularWeapon>();
+    int centerIndex = 0;
+    float slotAngleStep => (slotPoints != null && slotPoints.Length > 0) ? (arcDegrees / slotPoints.Length) : (arcDegrees / Mathf.Max(1, slotCount));
 
-    [Tooltip("Reference to an optional battery. Passes to TryFire to allow battery-driven weapons.")]
-    [SerializeField] private ArmBattery battery;
-
-
-    [Tooltip("Number of slots to auto-create when slotPoints is empty")]
-    [SerializeField] private int defaultSlotCount = 6;
-
-
-    [Tooltip("Angle step when rotating the ring (deg). If zero it'll compute 360/slotCount")]
-    [SerializeField] private float manualAngleStep = 0f;
-
-
-    [Tooltip("Optional: Let the mount handle rotation input (Q to rotate clockwise). Disable if you want your own input handling.")]
-    [SerializeField] private bool handleInput = true;
-
-
-    private List<ModularWeapon> attachedWeapons = new List<ModularWeapon>();
-
-
-    // Which slot index is currently considered the center (aimed by crosshair)
-    private int centerIndex = 0;
-
-
-    // computed angle step
-    private float angleStep;
-
-
-    private void Awake()
+    void Awake()
     {
-        if (weaponsParent == null) weaponsParent = this.transform;
-
+        if (weaponsParent == null) weaponsParent = transform;
 
         if (slotPoints == null || slotPoints.Length == 0)
-            CreateAutoSlots(defaultSlotCount);
+            CreateSlotsAuto(slotCount);
 
-
-        angleStep = (manualAngleStep > 0f) ? manualAngleStep : (360f / slotPoints.Length);
-
-
-        attachedWeapons = new List<ModularWeapon>(new ModularWeapon[slotPoints.Length]);
-
-
-        // Initialize center state (if slot has a weapon later we will update it)
+        attached = new List<ModularWeapon>(new ModularWeapon[slotPoints.Length]);
+        centerIndex = Mathf.FloorToInt(slotPoints.Length / 2f); 
         UpdateCenterStates();
     }
 
-
-    private void Update()
+    void Update()
     {
-        if (!handleInput) return;
-
-
-        if (Input.GetKeyDown(KeyCode.Q))
+        if (handleInput)
         {
-            RotateCenterClockwise();
-        }
-        if (Input.GetKeyDown(KeyCode.E))
-        {
-            RotateCenterCounterClockwise();
-        }
+            if (Input.GetKeyDown(rotateClockwiseKey)) RotateCenterBy(1);
+            if (Input.GetKeyDown(rotateCounterClockwiseKey)) RotateCenterBy(-1);
+            if (Input.GetKeyDown(tossCenterKey)) TossCenterGun();
 
-
-        // FireAll while holding Fire1 (player requested behavior)
-        if (Input.GetButton("Fire1"))
-        {
-            FireAll();
+            if (Input.GetButton("Fire1"))
+            {
+                FireAll();
+            }
         }
     }
 
-
-    private void CreateAutoSlots(int count)
+    void CreateSlotsAuto(int count)
     {
         slotPoints = new Transform[count];
-        float radius = 0.8f;
+        float startAngle = -arcDegrees * 0.5f;
         for (int i = 0; i < count; i++)
         {
             var go = new GameObject($"Slot_{i}");
             go.transform.SetParent(transform, false);
-            float angle = (i / (float)count) * Mathf.PI * 2f;
-            go.transform.localPosition = new Vector3(Mathf.Cos(angle) * radius, 0.0f, Mathf.Sin(angle) * radius);
-            go.transform.localRotation = Quaternion.identity;
+            float t = (count == 1) ? 0f : (i / (float)(count - 1)); 
+            float angle = startAngle + t * arcDegrees;
+            float rad = angle * Mathf.Deg2Rad;
+            go.transform.localPosition = new Vector3(Mathf.Sin(rad) * radius, 0f, Mathf.Cos(rad) * radius); 
+            go.transform.localRotation = Quaternion.LookRotation((transform.position - go.transform.position).normalized); 
             slotPoints[i] = go.transform;
         }
     }
 
-    public int AttachWeapon(ModularWeapon weaponPrefab)
+    public int AttachWeapon(ModularWeapon prefab)
     {
-        if (weaponPrefab == null) return -1;
+        if (prefab == null) return -1;
         int slot = FindFirstEmptySlot();
         if (slot < 0) return -1;
 
+        GameObject instGO = Instantiate(prefab.gameObject, weaponsParent);
+        ModularWeapon inst = instGO.GetComponent<ModularWeapon>();
+        inst.transform.SetParent(slotPoints[slot], false);
+        inst.transform.localPosition = Vector3.zero;
+        inst.transform.localRotation = Quaternion.identity;
 
-        var instanceGO = Instantiate(weaponPrefab.gameObject, weaponsParent);
-        var instance = instanceGO.GetComponent<ModularWeapon>();
-        instance.transform.SetParent(slotPoints[slot], false);
-        instance.transform.localPosition = Vector3.zero;
-        instance.transform.localRotation = Quaternion.identity;
-
-
-        attachedWeapons[slot] = instance;
-        instance.SetParentMount(this, slot);
-
+        attached[slot] = inst;
+        inst.SetParentMount(this, slot);
 
         UpdateCenterStates();
         return slot;
     }
 
-    public ModularWeapon DetachWeapon(int slotIndex, bool drop = true)
+    int FindFirstEmptySlot()
     {
-        if (slotIndex < 0 || slotIndex >= attachedWeapons.Count) return null;
-        var w = attachedWeapons[slotIndex];
-        if (w == null) return null;
-
-
-        attachedWeapons[slotIndex] = null;
-
-
-        if (drop)
-        {
-            w.transform.SetParent(null, true);
-            w.ClearParentMount();
-        }
-        else
-        {
-            w.ClearParentMount();
-            Destroy(w.gameObject);
-        }
-
-
-        // If the detached slot was the center, advance center so the player always has a center slot (optional)
-        if (slotIndex == centerIndex)
-        {
-            centerIndex = Mathf.Clamp(centerIndex, 0, attachedWeapons.Count - 1);
-            UpdateCenterStates();
-        }
-
-
-        return w;
-    }
-
-    public bool FireSlot(int slotIndex)
-    {
-        if (slotIndex < 0 || slotIndex >= attachedWeapons.Count) return false;
-        var w = attachedWeapons[slotIndex];
-        if (w == null) return false;
-
-
-        Camera cam = Camera.main; // center uses crosshair if available
-        return w.TryFire(battery, cam);
-    }
-
-
-    public void FireAll()
-    {
-        Camera cam = Camera.main;
-        for (int i = 0; i < attachedWeapons.Count; i++)
-        {
-            var w = attachedWeapons[i];
-            if (w == null) continue;
-            // Pass cam so center gun can use crosshair. Others will ignore it.
-            w.TryFire(battery, cam);
-        }
-    }
-
-
-    private int FindFirstEmptySlot()
-    {
-        for (int i = 0; i < attachedWeapons.Count; i++) if (attachedWeapons[i] == null) return i;
+        for (int i = 0; i < attached.Count; i++) if (attached[i] == null) return i;
         return -1;
-    }
-
-
-    public ModularWeapon[] GetAttachedWeaponsSnapshot() => attachedWeapons.ToArray();
-
-
-    // Rotation API: rotates the weaponsParent visually so the next slot moves to 'center'
-
-
-    public void RotateCenterClockwise()
-    {
-        RotateCenterBy(1);
-    }
-
-
-    public void RotateCenterCounterClockwise()
-    {
-        RotateCenterBy(-1);
     }
 
     public void RotateCenterBy(int steps)
     {
         if (slotPoints == null || slotPoints.Length == 0) return;
-        int slotCount = slotPoints.Length;
-        centerIndex = (centerIndex + steps) % slotCount;
-        if (centerIndex < 0) centerIndex += slotCount;
+        int len = slotPoints.Length;
+        centerIndex = (centerIndex + steps) % len;
+        if (centerIndex < 0) centerIndex += len;
 
-
-        // rotate visual parent around Y by angleStep * steps (negative so rotating ring moves selected slot to front)
-        float rotationAngle = -angleStep * steps;
-        weaponsParent.Rotate(Vector3.up, rotationAngle, Space.Self);
-
+        float anglePerSlot = arcDegrees / Mathf.Max(1, slotPoints.Length);
+        weaponsParent.Rotate(Vector3.up, -anglePerSlot * steps, Space.Self);
 
         UpdateCenterStates();
     }
 
-
-    private void UpdateCenterStates()
+    void UpdateCenterStates()
     {
-        for (int i = 0; i < attachedWeapons.Count; i++)
+        for (int i = 0; i < attached.Count; i++)
         {
-            var w = attachedWeapons[i];
-            if (w != null)
-            {
-                w.SetCenterState(i == centerIndex);
-            }
+            var w = attached[i];
+            if (w != null) w.SetCenterState(i == centerIndex);
         }
+    }
+
+    public bool FireSlot(int slotIndex)
+    {
+        if (slotIndex < 0 || slotIndex >= attached.Count) return false;
+        var w = attached[slotIndex];
+        if (w == null) return false;
+        Camera cam = Camera.main;
+        return w.TryFire(battery, cam, centerMultiplier);
+    }
+
+    public void FireAll()
+    {
+        Camera cam = Camera.main;
+        for (int i = 0; i < attached.Count; i++)
+        {
+            var w = attached[i];
+            if (w == null) continue;
+            w.TryFire(battery, cam, centerMultiplier);
+        }
+    }
+
+    public void TossCenterGun(float forwardForce = 5f, float upForce = 1.2f)
+    {
+        if (centerIndex < 0 || centerIndex >= attached.Count) return;
+        var w = attached[centerIndex];
+        if (w == null) return;
+
+        Vector3 dir = Vector3.forward;
+        if (w.firePoint != null) dir = w.firePoint.forward;
+        else if (slotPoints != null && centerIndex < slotPoints.Length && slotPoints[centerIndex] != null)
+            dir = (slotPoints[centerIndex].forward);
+
+        attached[centerIndex] = null;
+
+        w.TossOut(dir, forwardForce, upForce);
+
+        if (attached.Count > 0)
+        {
+            centerIndex = Mathf.Clamp(centerIndex, 0, attached.Count - 1);
+        }
+        UpdateCenterStates();
     }
 }

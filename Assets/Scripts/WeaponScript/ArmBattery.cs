@@ -1,21 +1,23 @@
 using UnityEngine;
 
-
 public class ArmBattery : MonoBehaviour
 {
-    [SerializeField] private float maxCharge = 100f;
-    [SerializeField] private float currentCharge = 100f;
-    [SerializeField] private float rechargeRate = 10f;
-    [SerializeField] private float rechargeDelay = 1.5f;
+    [Header("Battery")]
+    public float maxCharge = 100f;
+    [Tooltip("Initial charge (if you want to start lower)")]
+    public float initialCharge = 100f;
+    public float rechargeRate = 8f; 
+    public float rechargeDelay = 1.5f; 
 
+    float currentCharge;
+    float lastConsumeTime = -999f;
 
-    private float lastConsumeTime = -999f;
+    void Awake()
+    {
+        currentCharge = Mathf.Clamp(initialCharge, 0f, maxCharge);
+    }
 
-
-    private void Awake() { currentCharge = Mathf.Clamp(currentCharge, 0f, maxCharge); }
-
-
-    private void Update()
+    void Update()
     {
         if (Time.time > lastConsumeTime + rechargeDelay)
         {
@@ -24,17 +26,27 @@ public class ArmBattery : MonoBehaviour
         }
     }
 
-
     public bool Consume(float amount)
     {
         if (amount <= 0f) return true;
-        if (currentCharge >= amount) { currentCharge -= amount; lastConsumeTime = Time.time; return true; }
+        if (currentCharge >= amount)
+        {
+            currentCharge -= amount;
+            lastConsumeTime = Time.time;
+            return true;
+        }
         return false;
     }
 
+    public float GetBatteryPercent()
+    {
+        return currentCharge / maxCharge;
+    }
 
-    public float GetCurrentCharge() => currentCharge;
-    public float GetMaxCharge() => maxCharge;
-    public float GetChargePercent() => (maxCharge <= 0f) ? 0f : (currentCharge / maxCharge);
-    public void Refill() => currentCharge = maxCharge;
+
+    public float GetCurrent() => currentCharge;
+    public float GetMax() => maxCharge;
+    public float GetPercent() => (maxCharge <= 0f) ? 0f : (currentCharge / maxCharge);
+
+    public void Refill() { currentCharge = maxCharge; }
 }
