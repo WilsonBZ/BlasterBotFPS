@@ -190,6 +190,8 @@ public class PlayerMovement : MonoBehaviour
             velocity = slideDirection * slideSpeed;
         }
 
+
+
         if (isSliding)
         {
             //float speedNormalized = Mathf.Clamp01(velocity.magnitude / maxSlideSpeed);

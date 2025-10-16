@@ -79,28 +79,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pellets: 1
   spreadAngle: 1
-  fireRate: 0.3
-  reloadTime: 1.5
-  maxAmmo: 100
-  projectilePrefab: {fileID: 8184155314046719719, guid: ae6f733ff470385429cb9dd18b79b0cf, type: 3}
+  fireRate: 2
   energyCostPerShot: 5
-  recoilAmount: 2
-  recoilRecoverySpeed: 5
-  kickbackAmount: {x: 9, y: 0.5, z: 0}
-  kickbackRecoverySpeed: 10
-  recoilRotation: {x: -10, y: 0.5, z: -0.4}
-  rotationRecoverySpeed: 8
-  crosshairBloom: 20
-  crosshairRecoveryRate: 8
-  crosshair: {fileID: 0}
   firePoint: {fileID: 8820584187313947972}
-  playerCamera: {fileID: 0}
-  weaponPivot: {fileID: 5980679224241030468}
-  muzzleFlash: {fileID: 0}
+  projectilePrefab: {fileID: 8184155314046719719, guid: ae6f733ff470385429cb9dd18b79b0cf, type: 3}
+  useCrosshairWhenCentered: 1
+  muzzleFlash: {fileID: 2090329408474489621, guid: 0f073673bec7b6c448431b334dd87d68, type: 3}
   audioSource: {fileID: 0}
   shootSound: {fileID: 0}
-  isMainGun: 1
-  applyRecoil: 1
 --- !u!1001 &6157860416179364527
 PrefabInstance:
   m_ObjectHideFlags: 0

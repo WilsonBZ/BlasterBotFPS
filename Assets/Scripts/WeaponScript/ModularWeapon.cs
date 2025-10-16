@@ -1,9 +1,4 @@
 using UnityEngine;
-
-/// <summary>
-/// Weapon that fires projectiles in the direction of its firePoint (or camera if it's the center and allowed).
-/// Consumes energy from an ArmBattery passed to TryFire(). No per-weapon ammo � battery-only model.
-/// </summary>
 [RequireComponent(typeof(Collider))]
 public class ModularWeapon : MonoBehaviour
 {
@@ -12,12 +7,12 @@ public class ModularWeapon : MonoBehaviour
     [Tooltip("Spread angle in degrees")]
     public float spreadAngle = 6f;
     [Tooltip("Shots per second")]
-    public float fireRate = 3f; // used to compute minimum interval between shots
+    public float fireRate = 3f; 
     [Tooltip("Energy consumed per full shot (before center multiplier)")]
     public float energyCostPerShot = 1f;
 
     [Header("References")]
-    public Transform firePoint; // used as spawn & facing for non-centered guns
+    public Transform firePoint; 
     public GameObject projectilePrefab;
     [Tooltip("If true, when this weapon is the center it will aim at Camera.main viewport center")]
     public bool useCrosshairWhenCentered = true;
@@ -27,11 +22,9 @@ public class ModularWeapon : MonoBehaviour
     public AudioSource audioSource;
     public AudioClip shootSound;
 
-    // Runtime
     float lastShotTime = -999f;
     public bool IsCenter { get; private set; } = false;
 
-    // Mount info (set by ArmMount)
     ArmMount parentMount = null;
     int parentSlotIndex = -1;
 
@@ -51,27 +44,19 @@ public class ModularWeapon : MonoBehaviour
     {
         IsCenter = isCenter;
     }
-
-    /// <summary>
-    /// Attempts to fire. Returns true if a shot was produced.
-    /// The mount should pass its battery and the player's camera (Camera.main recommended).
-    /// </summary>
     public bool TryFire(ArmBattery battery, Camera playerCamera, float centerMultiplier = 1f)
     {
-        // enforce fireRate only (no extra cooldowns)
         float interval = 1f / Mathf.Max(0.0001f, fireRate);
         if (Time.time - lastShotTime < interval) return false;
 
-        // compute required energy (apply center multiplier if this is the center)
         float cost = energyCostPerShot * (IsCenter ? centerMultiplier : 1f);
 
         if (battery != null)
         {
-            if (!battery.Consume(cost)) return false; // not enough energy
+            if (!battery.Consume(cost)) return false; 
         }
         else
         {
-            // If there is no battery, optionally allow fire by default (or block). Here we block:
             return false;
         }
 
@@ -119,9 +104,6 @@ public class ModularWeapon : MonoBehaviour
         return spreadDirection.normalized;
     }
 
-    /// <summary>
-    /// Called by mount to physically toss this weapon into the world. Adds/uses Rigidbody.
-    /// </summary>
     public void TossOut(Vector3 direction, float forwardForce = 4f, float upForce = 1.2f)
     {
         transform.SetParent(null, true);

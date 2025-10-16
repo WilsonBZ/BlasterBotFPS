@@ -5,26 +5,27 @@ using UnityEngine;
 public class ArmMount : MonoBehaviour
 {
     [Header("Slots / Ring")]
+    [Tooltip("If empty, slots will be auto-generated across the specified arc")]
     public Transform[] slotPoints;
+    [Tooltip("Parent transform under which weapon instances will be created/parented. Usually a child so rotation/tweens affect visuals.")]
     public Transform weaponsParent;
+    [Tooltip("How many slots to auto-create when none are provided (default 7)")]
     public int slotCount = 7;
-    public float arcDegrees = 180f;
-    public float radius = 0.9f;
+    [Tooltip("Total arc in degrees (e.g. 180)")] public float arcDegrees = 180f;
+    [Tooltip("Radius for auto-generated slots")] public float radius = 0.9f;
 
     [Header("Battery")]
     public ArmBattery battery;
-    public float centerMultiplier = 1.5f;
+    [Tooltip("Center gun consumes this multiplier of energyCostPerShot")] public float centerMultiplier = 1.5f;
 
     [Header("Input")]
     public bool handleInput = true;
-    public KeyCode rotateClockwiseKey = KeyCode.Q;
-    public KeyCode rotateCounterClockwiseKey = KeyCode.E;
+    public KeyCode rotateRightKey = KeyCode.E;  
+    public KeyCode rotateLeftKey = KeyCode.Q;   
     public KeyCode tossCenterKey = KeyCode.G;
 
-    private List<ModularWeapon> attached = new List<ModularWeapon>();
-    private int centerIndex = 0;
-
-    private int SlotCount => (slotPoints != null && slotPoints.Length > 0) ? slotPoints.Length : slotCount;
+    private List<ModularWeapon> attached; 
+    private int centerIndex;              
 
     void Awake()
     {
@@ -34,10 +35,8 @@ public class ArmMount : MonoBehaviour
             CreateSlotsAuto(slotCount);
 
         attached = new List<ModularWeapon>(new ModularWeapon[slotPoints.Length]);
+        centerIndex = slotPoints.Length / 2;
 
-        centerIndex = Mathf.FloorToInt(slotPoints.Length / 2f);
-
-        EnsureCenterIsValid();
         UpdateCenterStates();
     }
 
@@ -45,11 +44,23 @@ public class ArmMount : MonoBehaviour
     {
         if (!handleInput) return;
 
-        if (Input.GetKeyDown(rotateClockwiseKey)) RotateCenterBy(1);
-        if (Input.GetKeyDown(rotateCounterClockwiseKey)) RotateCenterBy(-1);
-        if (Input.GetKeyDown(tossCenterKey)) TossCenterGun();
+        if (Input.GetKeyDown(rotateRightKey))
+        {
+            ShiftAttached(+1);
+        }
+        if (Input.GetKeyDown(rotateLeftKey))
+        {
+            ShiftAttached(-1);
+        }
+        if (Input.GetKeyDown(tossCenterKey))
+        {
+            TossCenterGun();
+        }
 
-        if (Input.GetButton("Fire1")) FireAll();
+        if (Input.GetButton("Fire1"))
+        {
+            FireAll();
+        }
     }
 
     void CreateSlotsAuto(int count)
@@ -58,7 +69,7 @@ public class ArmMount : MonoBehaviour
         float startAngle = -arcDegrees * 0.5f;
         for (int i = 0; i < count; i++)
         {
-            var go = new GameObject($"Slot_{i}");
+            GameObject go = new GameObject($"Slot_{i}");
             go.transform.SetParent(transform, false);
             float t = (count == 1) ? 0f : (i / (float)(count - 1));
             float angle = startAngle + t * arcDegrees;
@@ -84,54 +95,8 @@ public class ArmMount : MonoBehaviour
         attached[slot] = inst;
         inst.SetParentMount(this, slot);
 
-        EnsureCenterIsValid();
         UpdateCenterStates();
         return slot;
-    }
-
-    public ModularWeapon DetachWeapon(int slotIndex, bool drop = true)
-    {
-        if (slotIndex < 0 || slotIndex >= attached.Count) return null;
-        var w = attached[slotIndex];
-        if (w == null) return null;
-
-        attached[slotIndex] = null;
-
-        if (drop)
-        {
-            w.transform.SetParent(null, true);
-            w.ClearParentMount();
-        }
-        else
-        {
-            w.ClearParentMount();
-            Destroy(w.gameObject);
-        }
-
-        EnsureCenterIsValid();
-        UpdateCenterStates();
-
-        return w;
-    }
-
-    public bool FireSlot(int slotIndex)
-    {
-        if (slotIndex < 0 || slotIndex >= attached.Count) return false;
-        var w = attached[slotIndex];
-        if (w == null) return false;
-        Camera cam = Camera.main;
-        return w.TryFire(battery, cam, centerMultiplier);
-    }
-
-    public void FireAll()
-    {
-        Camera cam = Camera.main;
-        for (int i = 0; i < attached.Count; i++)
-        {
-            var w = attached[i];
-            if (w == null) continue;
-            w.TryFire(battery, cam, centerMultiplier);
-        }
     }
 
     int FindFirstEmptySlot()
@@ -141,96 +106,102 @@ public class ArmMount : MonoBehaviour
         return -1;
     }
 
-    public void RotateCenterBy(int steps)
+    public void ShiftAttached(int shiftSlots)
     {
-        if (slotPoints == null || slotPoints.Length == 0) return;
-        if (AllSlotsEmpty()) return;
+        if (attached == null || attached.Count == 0) return;
+        int n = attached.Count;
+        shiftSlots = ((shiftSlots % n) + n) % n;
+        if (shiftSlots == 0) return;
 
-        int len = attached.Count;
-
-        int sign = (steps >= 0) ? 1 : -1;
-        steps = Mathf.Abs(steps);
-
-        for (int s = 0; s < steps; s++)
+        ModularWeapon[] newArr = new ModularWeapon[n];
+        for (int i = 0; i < n; i++)
         {
-            int next = FindNextOccupiedSlot(centerIndex, sign);
-            if (next == centerIndex) break;
-            float anglePerSlot = arcDegrees / Mathf.Max(1, slotPoints.Length);
-            weaponsParent.Rotate(Vector3.up, -anglePerSlot * sign, Space.Self);
-
-            centerIndex = next;
+            int fromIndex = (i - shiftSlots + n) % n;
+            newArr[i] = attached[fromIndex];
         }
 
+        attached = new List<ModularWeapon>(newArr);
+        ReparentAllToSlots();
         UpdateCenterStates();
+    }
+
+    void ReparentAllToSlots()
+    {
+        for (int i = 0; i < attached.Count; i++)
+        {
+            var w = attached[i];
+            if (w == null) continue;
+            w.transform.SetParent(slotPoints[i], false);
+            w.transform.localPosition = Vector3.zero;
+            w.transform.localRotation = Quaternion.identity;
+            w.SetParentMount(this, i);
+        }
     }
 
     public void TossCenterGun(float forwardForce = 5f, float upForce = 1.2f)
     {
         if (AllSlotsEmpty()) return;
 
-        EnsureCenterIsValid();
-        if (attached[centerIndex] == null)
+        int target = centerIndex;
+        if (attached[target] == null)
         {
-            return;
+            target = FindNearestOccupiedSlot(centerIndex);
+            if (attached[target] == null) return;
         }
 
-        var w = attached[centerIndex];
+        ModularWeapon w = attached[target];
+        attached[target] = null;
 
         Vector3 dir = Vector3.forward;
         if (w.firePoint != null) dir = w.firePoint.forward;
-        else if (slotPoints != null && centerIndex < slotPoints.Length && slotPoints[centerIndex] != null)
-            dir = slotPoints[centerIndex].forward;
-
-        attached[centerIndex] = null;
+        else if (slotPoints != null && target < slotPoints.Length && slotPoints[target] != null)
+            dir = slotPoints[target].forward;
 
         w.TossOut(dir, forwardForce, upForce);
 
-        EnsureCenterIsValid();
         UpdateCenterStates();
     }
 
     bool AllSlotsEmpty()
     {
-        for (int i = 0; i < attached.Count; i++) if (attached[i] != null) return false;
+        for (int i = 0; i < attached.Count; i++)
+            if (attached[i] != null) return false;
         return true;
-    }
-
-    int FindNextOccupiedSlot(int startIndex, int step)
-    {
-        int len = attached.Count;
-        int idx = startIndex;
-        for (int i = 0; i < len; i++)
-        {
-            idx = (idx + step + len) % len;
-            if (attached[idx] != null) return idx;
-        }
-        return startIndex;
     }
 
     int FindNearestOccupiedSlot(int startIndex)
     {
         if (attached[startIndex] != null) return startIndex;
-        int len = attached.Count;
-        for (int dist = 1; dist < len; dist++)
+        int n = attached.Count;
+        for (int dist = 1; dist < n; dist++)
         {
-            int right = (startIndex + dist) % len;
-            int left = (startIndex - dist + len) % len;
-            if (attached[right] != null) return right;
-            if (attached[left] != null) return left;
+            int r = (startIndex + dist) % n;
+            int l = (startIndex - dist + n) % n;
+            if (attached[r] != null) return r;
+            if (attached[l] != null) return l;
         }
         return startIndex;
     }
 
-    void EnsureCenterIsValid()
+    public bool FireSlot(int slotIndex)
     {
-        if (attached == null || attached.Count == 0) return;
-        if (!AllSlotsEmpty())
+        if (slotIndex < 0 || slotIndex >= attached.Count) return false;
+        var w = attached[slotIndex];
+        if (w == null) return false;
+        Camera cam = Camera.main;
+        float mult = (slotIndex == centerIndex) ? centerMultiplier : 1f;
+        return w.TryFire(battery, cam, mult);
+    }
+
+    public void FireAll()
+    {
+        Camera cam = Camera.main;
+        for (int i = 0; i < attached.Count; i++)
         {
-            if (attached[centerIndex] == null)
-            {
-                int newCenter = FindNearestOccupiedSlot(centerIndex);
-                centerIndex = newCenter;
-            }
+            var w = attached[i];
+            if (w == null) continue;
+            float mult = (i == centerIndex) ? centerMultiplier : 1f;
+            w.TryFire(battery, cam, mult);
         }
     }
 

@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &7699176676634875320
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2859935148153152392}
+  - component: {fileID: 8639139350453522086}
+  m_Layer: 0
+  m_Name: Generator
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2859935148153152392
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7699176676634875320}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 151.8}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8639139350453522086
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7699176676634875320}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8cc6a59c6c21fd1419ffc2b2d786fe09, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  startRooms:
+  - prefab: {fileID: 7416511912606063198, guid: b06d34c0174c16b4fa1d33d38b99342d, type: 3}
+    size: {x: 0, y: 0}
+    availableDoors: 00000000
+  normalRooms:
+  - prefab: {fileID: 7416511912606063198, guid: b06d34c0174c16b4fa1d33d38b99342d, type: 3}
+    size: {x: 0, y: 0}
+    availableDoors: 00000000010000000200000003000000
+  - prefab: {fileID: 7416511912606063198, guid: b06d34c0174c16b4fa1d33d38b99342d, type: 3}
+    size: {x: 0, y: 0}
+    availableDoors: 0000000001000000
+  endRooms:
+  - prefab: {fileID: 7416511912606063198, guid: b06d34c0174c16b4fa1d33d38b99342d, type: 3}
+    size: {x: 0, y: 0}
+    availableDoors: 02000000
+  straightCorridorPrefab: {fileID: 3071938998891513242, guid: 1c041de9e061d66498031b32bcb4a2d3, type: 3}
+  cornerCorridorPrefab: {fileID: 1567706489125173742, guid: 83a501fce44762f4fb7a0c56d66aca30, type: 3}
+  minRooms: 4
+  maxRooms: 8
+  seed: 0
+  gridSize: 4
+  maxAttemptsPerRoom: 50
+  maxGenerationAttempts: 10
+  drawGizmos: 1
+  gridColor: {r: 0.5896226, g: 0.9922805, b: 1, a: 1}
