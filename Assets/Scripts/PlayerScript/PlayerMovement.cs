@@ -241,10 +241,68 @@ public class PlayerMovement : MonoBehaviour
 
     private void OnControllerColliderHit(ControllerColliderHit hit)
     {
+        // existing sliding bounce behavior for world geometry (keep it)
         if (isSliding && hit.normal.y < 0.3f)
         {
+            // reflect off walls slightly
             velocity = Vector3.Reflect(velocity, hit.normal) * 0.7f;
         }
+
+        // NEW: if we are sliding/dashing and we hit an Enemy, transfer knockback
+        if (isSliding)
+        {
+            if (hit.collider.TryGetComponent<Enemy>(out var enemy))
+            {
+                // Stop the slide immediately
+                StopSlide();
+
+                // Calculate impulse to apply to enemy
+                // Use player's horizontal velocity (so enemy is knocked mostly horizontally)
+                Vector3 horizontalVelocity = velocity;
+                horizontalVelocity.y = 0f;
+
+                // If player is not moving much, use forward direction
+                if (horizontalVelocity.magnitude < 0.1f)
+                {
+                    horizontalVelocity = transform.forward * walkSpeed;
+                }
+
+                // Configurable multiplier (tweak as needed)
+                float knockbackMultiplier = 1.2f;
+
+                // Compose impulse: include a little upward to make knockback feel good
+                Vector3 impulse = horizontalVelocity.normalized * horizontalVelocity.magnitude * knockbackMultiplier;
+                impulse.y = Mathf.Max(0.5f, horizontalVelocity.magnitude * 0.25f); // give a vertical lift
+
+                // Damage applied by dash (optional)
+                float dashDamage = 20f;
+
+                // Stun/knockback duration on enemy (seconds)
+                float knockbackDuration = 0.6f;
+
+                // Call enemy API
+                enemy.ApplyKnockback(impulse, dashDamage, knockbackDuration);
+            }
+        }
+    }
+
+    private void StopSlide()
+    {
+        if (!isSliding) return;
+
+        isSliding = false;
+        zooming_Effect?.SetActive(false);
+        slideCooldownRemaining = slideCooldown;
+
+        // If you have camera slide effects component
+        if (TryGetComponent<MouseMovement>(out var cam))
+        {
+            cam.SetSlideEffects(false, 0f);
+        }
+
+        // Optionally reduce player's velocity so dash stops abruptly
+        // Keep a small bleed so player isn't totally frozen
+        velocity *= 0.15f;
     }
 
     public float GetSpeed()

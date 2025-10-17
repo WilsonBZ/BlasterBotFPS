@@ -38,7 +38,7 @@ public class PlayerManager : MonoBehaviour, IDamageable
         lastDamageTime = Time.time;
 
         OnHealthChanged?.Invoke(currentHealth / maxHealth);
-        AudioSource.PlayClipAtPoint(damageSound, transform.position);
+        //AudioSource.PlayClipAtPoint(damageSound, transform.position);
 
         StartCoroutine(DamageFlash());
 
