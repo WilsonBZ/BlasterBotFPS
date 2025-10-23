@@ -45,7 +45,7 @@ public class Enemy : BaseEnemy, IDamageable
 
     //public event Action OnDeath;
     private NavMeshAgent agent;
-    //private Animator animator;
+    [SerializeField] private Animator animator;
     private PlayerManager player;
 
     private EnemyState currentState;
@@ -70,7 +70,7 @@ public class Enemy : BaseEnemy, IDamageable
     private void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
-        // animator = GetComponent<Animator>();
+        animator = GetComponent<Animator>();
         player = FindFirstObjectByType<PlayerManager>();
 
         // ensure Rigidbody exists and is initially kinematic (so NavMeshAgent controls movement)
@@ -104,7 +104,7 @@ public class Enemy : BaseEnemy, IDamageable
         }
 
         UpdateStateMachine();
-        //UpdateAnimations();
+        UpdateAnimations();
 
         isGrounded = Physics.CheckSphere(
         transform.position + groundCheckOffset,
@@ -171,10 +171,10 @@ public class Enemy : BaseEnemy, IDamageable
         }
     }
 
-    /*private void UpdateAnimations()
+    private void UpdateAnimations()
     {
-        animator.SetFloat(animMoveSpeed, agent.velocity.magnitude / agent.speed);
-    }*/
+        animator.SetFloat("MoveSpeed", agent.velocity.magnitude / agent.speed);
+    }
 
     private void HandleIdleState(float distanceToPlayer)
     {
