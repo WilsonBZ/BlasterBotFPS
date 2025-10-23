@@ -8,12 +8,12 @@ public abstract class BaseEnemy : MonoBehaviour
     protected bool isDead = false;
     public bool IsDead => isDead;
 
-    //protected void HandleDeath()
-    //{
-    //    if (isDead) return;
-    //    //isDead = true;
-    //    Debug.Log($"{gameObject.name} -> BaseEnemy.HandleDeath() invoked");
-    //    //OnDeath?.Invoke();
-    //}
+    protected void HandleDeath()
+    {
+        if (isDead) return;
+        isDead = true;
+        Debug.Log($"{gameObject.name} -> BaseEnemy.HandleDeath() invoked");
+        OnDeath?.Invoke();
+    }
 }
 

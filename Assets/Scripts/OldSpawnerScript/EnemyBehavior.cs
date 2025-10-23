@@ -99,7 +99,7 @@ public class Enemy : BaseEnemy, IDamageable
 
         if (config.canExplode && Vector3.Distance(transform.position, player.transform.position) <= config.explosionRange)
         {
-            //StartCoroutine(Explode());
+            StartCoroutine(Explode());
             return;
         }
 
@@ -194,7 +194,7 @@ public class Enemy : BaseEnemy, IDamageable
         }
         if (isGrounded == true)
         {
-            //agent.SetDestination(player.transform.position);
+            agent.SetDestination(player.transform.position);
         }
     }
 
@@ -386,40 +386,40 @@ public class Enemy : BaseEnemy, IDamageable
         //Debug.Log(message: "die");
     }
 
-    //private IEnumerator Explode()
-    //{
-        //isExploded = true;
-        //agent.isStopped = true;
-        ////animator.SetTrigger(animDie);
+    private IEnumerator Explode()
+    {
+        isExploded = true;
+        agent.isStopped = true;
+        //animator.SetTrigger(animDie);
 
-        //yield return new WaitForSeconds(selfDestructDelay);
+        yield return new WaitForSeconds(selfDestructDelay);
 
-        //if (explosionEffect)
-        //{
-        //    Instantiate(explosionEffect, transform.position, Quaternion.identity);
-        //}
+        if (explosionEffect)
+        {
+            Instantiate(explosionEffect, transform.position, Quaternion.identity);
+        }
 
 
-        //Collider[] hits = Physics.OverlapSphere(transform.position, explosionRange);
-        //foreach (var hit in hits)
-        //{
-        //    if (hit.TryGetComponent<IDamageable>(out var damageable))
-        //    {
-        //        float distance = Vector3.Distance(transform.position, hit.transform.position);
-        //        float damageMultiplier = 1 - Mathf.Clamp01(distance / explosionRange);
-        //        damageable.TakeDamage(explosionDamage * damageMultiplier);
+        Collider[] hits = Physics.OverlapSphere(transform.position, explosionRange);
+        foreach (var hit in hits)
+        {
+            if (hit.TryGetComponent<IDamageable>(out var damageable))
+            {
+                float distance = Vector3.Distance(transform.position, hit.transform.position);
+                float damageMultiplier = 1 - Mathf.Clamp01(distance / explosionRange);
+                damageable.TakeDamage(explosionDamage * damageMultiplier);
 
-        //        Rigidbody rb = hit.GetComponent<Rigidbody>();
-        //        if (rb)
-        //        {
-        //            Vector3 direction = (hit.transform.position - transform.position).normalized;
-        //            rb.AddForce(direction * explosionForce, ForceMode.Impulse);
-        //        }
-        //    }
-        //}
-        //HandleDeath();
-        //Die();
-   //}
+                Rigidbody rb = hit.GetComponent<Rigidbody>();
+                if (rb)
+                {
+                    Vector3 direction = (hit.transform.position - transform.position).normalized;
+                    rb.AddForce(direction * explosionForce, ForceMode.Impulse);
+                }
+            }
+        }
+        HandleDeath();
+        Die();
+   }
 
     private IEnumerator FleeBehavior()
     {

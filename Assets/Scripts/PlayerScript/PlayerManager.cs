@@ -7,7 +7,7 @@ public class PlayerManager : MonoBehaviour, IDamageable
     [Header("Health Settings")]
     [SerializeField] private float maxHealth = 100f;
     [SerializeField] private float invulnerabilityTime = 0.5f;
-    [SerializeField] private GameObject deathEffect;
+    //[SerializeField] private GameObject deathEffect;
     [SerializeField] private AudioClip damageSound;
 
     public float CurrentHealth => currentHealth;
@@ -70,7 +70,7 @@ public class PlayerManager : MonoBehaviour, IDamageable
         GetComponent<PlayerMovement>().enabled = false;
         GetComponent<MouseMovement>().enabled = false;
 
-        if (deathEffect) Instantiate(deathEffect, transform.position, Quaternion.identity);
+        //if (deathEffect) Instantiate(deathEffect, transform.position, Quaternion.identity);
 
         OnDeath?.Invoke();
 
