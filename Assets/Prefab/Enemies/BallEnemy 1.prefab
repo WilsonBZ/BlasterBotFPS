@@ -92,9 +92,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: 6de954fa02d460941a4ff7c232f37ddd, type: 2}
+  groundCheckOffset: {x: 0, y: -0.9, z: 0}
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 64
+  groundCheckRadius: 0.4
   healthBarPrefab: {fileID: 0}
   healthBarOffset: {x: 0, y: 2, z: 0}
-  attackPoint: {fileID: 0}
+  attackPoint: {fileID: 6962082424049450652}
   playerLayer:
     serializedVersion: 2
     m_Bits: 128
@@ -108,6 +113,9 @@ MonoBehaviour:
   explosionEffect: {fileID: 5289173458515104635, guid: 0f073673bec7b6c448431b334dd87d68, type: 3}
   explosionForce: 10
   selfDestructDelay: 0.5
+  animator: {fileID: 0}
+  defaultKnockbackRecovery: 0.6
+  maxAllowedKnockbackSpeed: 15
 --- !u!1001 &2099148979277316252
 PrefabInstance:
   m_ObjectHideFlags: 0

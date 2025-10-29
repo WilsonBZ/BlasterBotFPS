@@ -7,7 +7,7 @@ public class WeaponPickup : MonoBehaviour
     public KeyCode interactKey = KeyCode.E;
 
     bool playerNearby = false;
-    ArmMount nearbyArm = null;
+    ArmMount360 nearbyArm = null;
 
     void Reset()
     {
@@ -19,7 +19,7 @@ public class WeaponPickup : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            nearbyArm = other.GetComponentInChildren<ArmMount>();
+            nearbyArm = other.GetComponentInChildren<ArmMount360>();
             playerNearby = nearbyArm != null;
         }
     }

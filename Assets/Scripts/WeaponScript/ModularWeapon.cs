@@ -1,4 +1,9 @@
 using UnityEngine;
+
+/// <summary>
+/// Weapon that fires projectiles in the direction of its firePoint (or camera if it's the center and allowed).
+/// Consumes energy from an ArmBattery passed to TryFire(). No per-weapon ammo — battery-only model.
+/// </summary>
 [RequireComponent(typeof(Collider))]
 public class ModularWeapon : MonoBehaviour
 {
@@ -25,10 +30,10 @@ public class ModularWeapon : MonoBehaviour
     float lastShotTime = -999f;
     public bool IsCenter { get; private set; } = false;
 
-    ArmMount parentMount = null;
+    ArmMount360 parentMount = null;
     int parentSlotIndex = -1;
 
-    public void SetParentMount(ArmMount mount, int slotIndex)
+    public void SetParentMount(ArmMount360 mount, int slotIndex)
     {
         parentMount = mount;
         parentSlotIndex = slotIndex;
@@ -44,6 +49,7 @@ public class ModularWeapon : MonoBehaviour
     {
         IsCenter = isCenter;
     }
+
     public bool TryFire(ArmBattery battery, Camera playerCamera, float centerMultiplier = 1f)
     {
         float interval = 1f / Mathf.Max(0.0001f, fireRate);
@@ -57,6 +63,7 @@ public class ModularWeapon : MonoBehaviour
         }
         else
         {
+
             return false;
         }
 
@@ -65,31 +72,53 @@ public class ModularWeapon : MonoBehaviour
         return true;
     }
 
-    protected void FireInternal(Camera playerCamera)
+    protected virtual void FireInternal(Camera playerCamera)
     {
         if (muzzleFlash) muzzleFlash.Play();
         if (audioSource && shootSound) audioSource.PlayOneShot(shootSound);
 
-        Vector3 forward = (firePoint != null) ? firePoint.forward : transform.forward;
+        Vector3 forwardDir = (firePoint != null) ? firePoint.forward : transform.forward;
 
         if (IsCenter && useCrosshairWhenCentered && playerCamera != null)
         {
-            Ray r = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-            forward = r.direction;
+            Ray aimRay = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+            Vector3 aimPoint;
+            RaycastHit hit;
+            float maxAimDistance = 1000f;
+
+            if (Physics.Raycast(aimRay, out hit, maxAimDistance))
+            {
+                aimPoint = hit.point;
+            }
+            else
+            {
+                aimPoint = aimRay.GetPoint(maxAimDistance);
+            }
+
+            if (firePoint != null)
+                forwardDir = (aimPoint - firePoint.position).normalized;
+            else
+                forwardDir = (aimPoint - transform.position).normalized;
         }
 
         for (int i = 0; i < pellets; i++)
         {
-            Vector3 dir = CalculateSpread(forward);
+            Vector3 dir = CalculateSpread(forwardDir);
+
             if (projectilePrefab == null || firePoint == null) continue;
 
-            GameObject p = Instantiate(projectilePrefab, firePoint.position, Quaternion.LookRotation(dir));
-            Rigidbody rb = p.GetComponent<Rigidbody>();
-            var proj = p.GetComponent<Projectile>();
-            float speed = (proj != null) ? proj.Speed : 30f;
-            if (rb != null) rb.linearVelocity = dir * speed;
+            GameObject proj = Instantiate(projectilePrefab, firePoint.position, Quaternion.LookRotation(dir));
+            Rigidbody rb = proj.GetComponent<Rigidbody>();
+            var p = proj.GetComponent<Projectile>();
+            float speed = (p != null) ? p.Speed : 30f;
+
+            if (rb != null)
+            {
+                rb.linearVelocity = dir * speed;
+            }
         }
     }
+
 
     Vector3 CalculateSpread(Vector3 forward)
     {

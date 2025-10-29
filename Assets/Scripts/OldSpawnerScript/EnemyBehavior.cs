@@ -368,9 +368,11 @@ public class Enemy : BaseEnemy, IDamageable
     private void Die()
     {
         isExploded = true;
-
         if (healthBarInstance) healthBarInstance.SetActive(false);
         if (agent) agent.enabled = false;
+
+        // call base death handler to notify listeners
+        HandleDeath();
 
         //animator.SetTrigger(animDie);
         agent.enabled = false;
@@ -381,10 +383,8 @@ public class Enemy : BaseEnemy, IDamageable
         }
 
         if (deathEffect) Instantiate(deathEffect, transform.position, Quaternion.identity);
-        //HandleDeath();
-        //Destroy(gameObject, config.deathCleanupTime);
-        //Debug.Log(message: "die");
     }
+
 
     private IEnumerator Explode()
     {
