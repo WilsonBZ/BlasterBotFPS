@@ -95,6 +95,7 @@ public class GunShopUI : MonoBehaviour
     /// <summary>
     /// Attempt to attach the weapon prefab to the player's arm mount.
     /// If successful, notify the vendor (so waves can begin).
+    /// NOTE: important ordering - we trigger vendor waves BEFORE closing the shop to avoid clearing currentVendor early.
     /// </summary>
     void AttemptBuyWeapon(ModularWeapon prefab)
     {
@@ -118,11 +119,12 @@ public class GunShopUI : MonoBehaviour
             if (slot >= 0)
             {
                 SetMessage($"Equipped: {prefab.gameObject.name} (slot {slot})");
+
+                // Trigger vendor waves BEFORE we close the shop (so currentVendor still valid)
+                TriggerVendorWavesIfPresent();
+
                 // optionally close UI
                 if (closeOnPurchase) CloseShop();
-                // start vendor waves if vendor has controller
-                Debug.Log("TriggeringWave0");
-                TriggerVendorWavesIfPresent();
             }
             else
             {
@@ -139,9 +141,11 @@ public class GunShopUI : MonoBehaviour
             if (slot >= 0)
             {
                 SetMessage($"Equipped: {prefab.gameObject.name} (slot {slot})");
-                if (closeOnPurchase) CloseShop();
-                Debug.Log("TriggeringWave0");
+
+                // Trigger vendor waves BEFORE we close the shop
                 TriggerVendorWavesIfPresent();
+
+                if (closeOnPurchase) CloseShop();
             }
             else
             {
@@ -153,6 +157,9 @@ public class GunShopUI : MonoBehaviour
         SetMessage("No arm mount on player.");
     }
 
+    /// <summary>
+    /// Robustly find VendorWaveController related to currentVendor and trigger it.
+    /// </summary>
     private void TriggerVendorWavesIfPresent()
     {
         Debug.Log("[GunShopUI] TriggerVendorWavesIfPresent called. currentVendor = " + (currentVendor ? currentVendor.name : "NULL"));
@@ -205,7 +212,6 @@ public class GunShopUI : MonoBehaviour
                          "Found in scene: " + (all != null ? all.Length.ToString() : "0"));
     }
 
-
     void SetMessage(string text)
     {
         if (messageText != null) messageText.text = text;
@@ -224,9 +230,8 @@ public class GunShopUI : MonoBehaviour
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
 
-        // clear player/vender ref
+        // clear player/vendor ref
         currentPlayer = null;
         currentVendor = null;
     }
 }
-
