@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 7882916695402922597}
   - component: {fileID: 2141677437445380285}
   - component: {fileID: 194917538372712878}
+  - component: {fileID: 3318267515465241664}
   m_Layer: 0
   m_Name: BallEnemy 1
   m_TagString: Untagged
@@ -28,7 +29,7 @@ Transform:
   m_GameObject: {fileID: 3235534787794620987}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 25.67, y: -4.799, z: -3.79512}
+  m_LocalPosition: {x: 25.67, y: -4.832, z: -3.79512}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -116,6 +117,29 @@ MonoBehaviour:
   animator: {fileID: 0}
   defaultKnockbackRecovery: 0.6
   maxAllowedKnockbackSpeed: 15
+--- !u!136 &3318267515465241664
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3235534787794620987}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.5
+  m_Height: 1.0483088
+  m_Direction: 1
+  m_Center: {x: 0, y: 0.5358989, z: 0}
 --- !u!1001 &2099148979277316252
 PrefabInstance:
   m_ObjectHideFlags: 0
