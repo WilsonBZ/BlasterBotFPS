@@ -21,6 +21,7 @@ public class ArmMount360 : MonoBehaviour
     public ArmBattery battery;
     [Tooltip("How many shots per second the mount can perform (global fire rate).")]
     public float fireRate = 3f;
+    public float turnRate = 3f;
     [Tooltip("Energy multiplier applied when firing (if you want center to cost more).")]
     public float centerMultiplier = 1f;
 
@@ -35,10 +36,12 @@ public class ArmMount360 : MonoBehaviour
     public bool handleInput = true;
     public float modelYawOffset = -90f;
 
+    
     private Transform[] slotTransforms;           
     private List<ModularWeapon> attached;         
     private int centerIndex;                      
-    private float lastShotTime = -999f;           
+    private float lastShotTime = -999f;
+    private float nextFireTime;
     private float currentParentRotationY = 0f;    
     private Coroutine rotateCoroutine = null;
 
@@ -66,11 +69,11 @@ public class ArmMount360 : MonoBehaviour
     {
         if (!handleInput) return;
 
-        if (Input.GetButtonDown("Fire1"))
+        if (Input.GetButton("Fire1") && Time.time >= nextFireTime)
         {
             AttemptFireAndAdvance(-1);
         }
-        else if (Input.GetButtonDown("Fire2"))
+        else if (Input.GetButton("Fire2") && Time.time >= nextFireTime)
         {
             AttemptFireAndAdvance(+1);
         }
@@ -130,7 +133,8 @@ public class ArmMount360 : MonoBehaviour
 
     private void AttemptFireAndAdvance(int direction)
     {
-        float minInterval = 1f / Mathf.Max(0.0001f, fireRate);
+        nextFireTime = Time.time + fireRate;
+        float minInterval = 1f / Mathf.Max(0.0001f, turnRate);
         if (Time.time - lastShotTime < minInterval) return;
 
         int idx = centerIndex;

@@ -173,7 +173,7 @@ public class Enemy : BaseEnemy, IDamageable
 
     private void UpdateAnimations()
     {
-        animator.SetFloat("MoveSpeed", agent.velocity.magnitude / agent.speed);
+        //animator.SetFloat("MoveSpeed", agent.velocity.magnitude / agent.speed);
     }
 
     private void HandleIdleState(float distanceToPlayer)
@@ -267,8 +267,7 @@ public class Enemy : BaseEnemy, IDamageable
         {
             impulse = impulse.normalized * maxAllowedKnockbackSpeed;
         }
-
-        // apply damage if any
+    
         if (damage > 0f)
         {
             TakeDamage(damage);
@@ -383,6 +382,7 @@ public class Enemy : BaseEnemy, IDamageable
         }
 
         if (deathEffect) Instantiate(deathEffect, transform.position, Quaternion.identity);
+        Destroy(gameObject, config.deathCleanupTime);
     }
 
 
@@ -461,21 +461,21 @@ public class Enemy : BaseEnemy, IDamageable
         }
     }
 
-    //private void OnDrawGizmosSelected()
-    //{
-    //    // Visualization
-    //    Gizmos.color = Color.red;
-    //    Gizmos.DrawWireSphere(transform.position, config.detectionRange);
+    private void OnDrawGizmosSelected()
+    {
+        // Visualization
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, config.detectionRange);
 
-    //    Gizmos.color = Color.yellow;
-    //    Gizmos.DrawWireSphere(transform.position, config.chaseRange);
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, config.chaseRange);
 
-    //    if (attackPoint)
-    //    {
-    //        Gizmos.color = Color.magenta;
-    //        Gizmos.DrawWireSphere(attackPoint.position, config.attackRadius);
-    //    }
-    //}
+        if (attackPoint)
+        {
+            Gizmos.color = Color.magenta;
+            Gizmos.DrawWireSphere(attackPoint.position, config.attackRadius);
+        }
+    }
 }
 
 public enum EnemyState

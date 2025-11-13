@@ -14,6 +14,7 @@ public abstract class BaseEnemy : MonoBehaviour
         isDead = true;
         Debug.Log($"{gameObject.name} -> BaseEnemy.HandleDeath() invoked");
         OnDeath?.Invoke();
+        
     }
 }
 

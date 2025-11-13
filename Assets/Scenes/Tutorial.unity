@@ -4088,10 +4088,10 @@ MonoBehaviour:
   spawnPrefabs:
   - {fileID: 3235534787794620987, guid: 21c6f957c2ecffb468515fdf37982de5, type: 3}
   spawnRadius: 17.29
-  innerRadius: 15.15
+  innerRadius: 6.5
   spawnIndicatorPrefab: {fileID: 1399484125}
   indicatorDelay: 1
-  navSampleAttempts: 8
+  navSampleAttempts: -14
   navSampleMaxDistance: 2
   groundMask:
     serializedVersion: 2

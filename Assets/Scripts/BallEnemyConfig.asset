@@ -10,20 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 0}
-  m_Name: EnemyConfig
+  m_Name: BallEnemyConfig
   m_EditorClassIdentifier: Assembly-CSharp::EnemyConfig
   isRanged: 1
   preferredDistance: 10
   fireCooldown: 1.5
   projectilePrefab: {fileID: 0}
   canExplode: 1
-  explosionRange: 2
-  explosionDamage: 50
+  explosionRange: 25
+  explosionDamage: 100
   explosionForce: 10
   maxHealth: 100
-  moveSpeed: 8
+  moveSpeed: 15
   acceleration: 8
-  detectionRange: 15
+  detectionRange: 20
   chaseRange: 20
   fleeDistance: 10
   fleeDuration: 3
@@ -32,4 +32,4 @@ MonoBehaviour:
   attackRange: 2
   attackRadius: 1.5
   attackCooldown: 2
-  deathCleanupTime: 3
+  deathCleanupTime: 0

@@ -32,6 +32,7 @@ public class PlayerManager : MonoBehaviour, IDamageable
 
     public void TakeDamage(float amount)
     {
+        Debug.Log("Player TakeDamage: " + amount);
         if (isDead || Time.time < lastDamageTime + invulnerabilityTime) return;
 
         currentHealth -= amount;
@@ -61,6 +62,11 @@ public class PlayerManager : MonoBehaviour, IDamageable
             yield return new WaitForSeconds(0.1f);
             renderer.material.color = original;
         }
+    }
+
+    public float GetHealthPercent()
+    {
+        return currentHealth / maxHealth;
     }
 
     private void Die()

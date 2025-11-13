@@ -67,9 +67,7 @@ public class GunShopUI : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Called by GunVendor when player opens (so we know which player's mount to use).
-    /// </summary>
+
     public void OpenForPlayer(GameObject player, GunVendor vendor)
     {
         currentPlayer = player;
@@ -77,8 +75,7 @@ public class GunShopUI : MonoBehaviour
 
         if (player == null)
         {
-            // no player, but keep UI open so dev can debug
-            // clear mount reference
+
         }
 
         // clear message
@@ -92,11 +89,7 @@ public class GunShopUI : MonoBehaviour
         AttemptBuyWeapon(prefab);
     }
 
-    /// <summary>
-    /// Attempt to attach the weapon prefab to the player's arm mount.
-    /// If successful, notify the vendor (so waves can begin).
-    /// NOTE: important ordering - we trigger vendor waves BEFORE closing the shop to avoid clearing currentVendor early.
-    /// </summary>
+
     void AttemptBuyWeapon(ModularWeapon prefab)
     {
         if (prefab == null)
@@ -157,9 +150,6 @@ public class GunShopUI : MonoBehaviour
         SetMessage("No arm mount on player.");
     }
 
-    /// <summary>
-    /// Robustly find VendorWaveController related to currentVendor and trigger it.
-    /// </summary>
     private void TriggerVendorWavesIfPresent()
     {
         Debug.Log("[GunShopUI] TriggerVendorWavesIfPresent called. currentVendor = " + (currentVendor ? currentVendor.name : "NULL"));
