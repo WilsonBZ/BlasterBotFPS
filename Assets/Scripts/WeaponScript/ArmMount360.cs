@@ -63,11 +63,9 @@ public class ArmMount360 : MonoBehaviour
     private float currentParentRotationY = 0f;
     private Coroutine rotateCoroutine = null;
 
-    // ability state
     private bool abilityActive = false;
     private bool abilityOnCooldown = false;
 
-    // slide bookkeeping
     private struct WeaponSlideState
     {
         public ModularWeapon weapon;
@@ -77,7 +75,6 @@ public class ArmMount360 : MonoBehaviour
     }
     private WeaponSlideState[] slideStates;
 
-    // reflection: cached ModularWeapon internals (to bypass battery during ability)
     private MethodInfo mi_FireInternal = null;
     private FieldInfo fi_lastShotTime = null;
 
@@ -94,14 +91,12 @@ public class ArmMount360 : MonoBehaviour
         if (autoGenerateSlots)
             CreateSlotTransforms();
 
-        // default center index (0 is fine; logic will use nearest occupied fallback when needed)
         centerIndex = 0;
         currentParentRotationY = weaponsParent.localEulerAngles.y;
 
         if (battery == null)
-            battery = FindObjectOfType<ArmBattery>();
+            battery = FindFirstObjectByType<ArmBattery>();
 
-        // reflection: find protected/private FireInternal and lastShotTime in ModularWeapon
         var mwType = typeof(ModularWeapon);
         mi_FireInternal = mwType.GetMethod("FireInternal", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
         fi_lastShotTime = mwType.GetField("lastShotTime", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -124,13 +119,13 @@ public class ArmMount360 : MonoBehaviour
         if (!abilityActive)
         {
             // Fire1: fire center only (if empty => rotate-to-nearest-occupied then fire)
-            if (Input.GetButtonDown("Fire1"))
+            if (Input.GetButton("Fire1"))
                 StartCoroutine(FireCenterOrRotateToNearestThenFire());
 
             // rotate keys
-            if (Input.GetKeyDown(rotateLeftKey))
+            if (Input.GetKey(rotateLeftKey))
                 TryRotate(-1);
-            else if (Input.GetKeyDown(rotateRightKey))
+            else if (Input.GetKey(rotateRightKey))
                 TryRotate(+1);
 
             // toss center
@@ -176,7 +171,6 @@ public class ArmMount360 : MonoBehaviour
             Vector3 localPos = new Vector3(Mathf.Sin(rad) * radius, 0f, Mathf.Cos(rad) * radius);
             slotGO.transform.localPosition = localPos;
 
-            // rotate so model faces outward
             slotGO.transform.localRotation = Quaternion.Euler(0f, angle + modelYawOffset, 0f);
             Vector3 lookDir = (slotGO.transform.position - weaponsParent.position).normalized;
             if (lookDir.sqrMagnitude < 0.0001f) lookDir = Vector3.forward;
@@ -186,9 +180,6 @@ public class ArmMount360 : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Attach weapon prefab to first empty slot. Returns slot index or -1
-    /// </summary>
     public int AttachWeapon(ModularWeapon prefab)
     {
         if (prefab == null) return -1;
@@ -221,9 +212,7 @@ public class ArmMount360 : MonoBehaviour
         return -1;
     }
 
-    // -------------------- Input behaviours --------------------
 
-    // Fire center immediately if present, otherwise rotate to nearest occupied slot then fire it.
     private IEnumerator FireCenterOrRotateToNearestThenFire()
     {
         float minInterval = 1f / Mathf.Max(0.0001f, fireRate);
@@ -238,19 +227,14 @@ public class ArmMount360 : MonoBehaviour
             yield break;
         }
 
-        // center empty: find nearest occupied
         int nearest = FindNearestOccupiedSlot(centerIndex);
         if (nearest == centerIndex || attached[nearest] == null)
         {
-            // nothing to do
             yield break;
         }
 
-        // rotate visually so nearest becomes center
-        // We'll animate parent rotation to bring 'nearest' into the center and set centerIndex to nearest
         float angleStep = 360f / slotCount;
         float targetParentY = -nearest * angleStep;
-        // wait for rotation coroutine to complete
         if (rotateCoroutine != null) StopCoroutine(rotateCoroutine);
         // use a blocking coroutine to rotate then fire
         yield return StartCoroutine(AnimateParentRotationBlocking(currentParentRotationY, targetParentY, rotateDuration, rotateEase));
@@ -266,7 +250,6 @@ public class ArmMount360 : MonoBehaviour
         }
     }
 
-    // Rotate by delta (E/Q) — single-step rotation, respects turnRate
     private void TryRotate(int delta)
     {
         if (Time.time - lastRotateTime < Mathf.Max(0.0001f, turnRate)) return;
@@ -290,7 +273,6 @@ public class ArmMount360 : MonoBehaviour
         centerIndex = newIndex;
     }
 
-    // Blocking rotation coroutine helper (returns when finished)
     private IEnumerator AnimateParentRotationBlocking(float startY, float endY, float duration, float ease)
     {
         // use the same logic as AnimateParentRotation but blocking (no rotateCoroutine set)

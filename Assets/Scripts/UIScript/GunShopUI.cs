@@ -40,9 +40,6 @@ public class GunShopUI : MonoBehaviour
         Populate();
     }
 
-    /// <summary>
-    /// Create one button per prefab (clears previous children).
-    /// </summary>
     public void Populate()
     {
         if (contentParent == null || weaponButtonPrefab == null) return;
@@ -78,7 +75,6 @@ public class GunShopUI : MonoBehaviour
 
         }
 
-        // clear message
         if (messageText != null) messageText.text = "";
     }
 
