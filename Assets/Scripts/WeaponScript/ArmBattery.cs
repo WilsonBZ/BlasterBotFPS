@@ -4,7 +4,7 @@ public class ArmBattery : MonoBehaviour
 {
     [Header("Battery")]
     public float maxCharge = 100f;
-    [Tooltip("Initial charge (if you want to start lower)")]
+    [Tooltip("Initial charge")]
     public float initialCharge = 100f;
     public float rechargeRate = 8f; 
     public float rechargeDelay = 1.5f; 

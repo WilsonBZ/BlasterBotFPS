@@ -236,7 +236,7 @@ public class ArmMount360 : MonoBehaviour
         float angleStep = 360f / slotCount;
         float targetParentY = -nearest * angleStep;
         if (rotateCoroutine != null) StopCoroutine(rotateCoroutine);
-        // use a blocking coroutine to rotate then fire
+        //use a blocking coroutine to rotate then fire
         yield return StartCoroutine(AnimateParentRotationBlocking(currentParentRotationY, targetParentY, rotateDuration, rotateEase));
         centerIndex = nearest;
 

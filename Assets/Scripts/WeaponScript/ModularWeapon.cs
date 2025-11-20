@@ -1,9 +1,5 @@
 using UnityEngine;
 
-/// <summary>
-/// Weapon that fires projectiles in the direction of its firePoint (or camera if it's the center and allowed).
-/// Consumes energy from an ArmBattery passed to TryFire(). No per-weapon ammo — battery-only model.
-/// </summary>
 [RequireComponent(typeof(Collider))]
 public class ModularWeapon : MonoBehaviour
 {
