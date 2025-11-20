@@ -78,6 +78,8 @@ public class ArmMount360 : MonoBehaviour
     private MethodInfo mi_FireInternal = null;
     private FieldInfo fi_lastShotTime = null;
 
+    public List<GameObject> WeaponSockets ;
+
     private void Awake()
     {
         if (weaponsParent == null) weaponsParent = this.transform;
@@ -165,6 +167,7 @@ public class ArmMount360 : MonoBehaviour
         {
             GameObject slotGO = new GameObject($"RingSlot_{i}");
             slotGO.transform.SetParent(weaponsParent, false);
+            WeaponSockets.Add(slotGO);
 
             float angle = i * angleStep;
             float rad = Mathf.Deg2Rad * angle;
