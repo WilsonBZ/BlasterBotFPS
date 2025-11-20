@@ -54,6 +54,10 @@ public class ArmMount360 : MonoBehaviour
     [Tooltip("Should ability rotate the weaponsParent visually to center the center slot?")]
     public bool rotateParentToCenterOnAbility = true;
 
+    [Header("Center weapon rotation")]
+    [Tooltip("Local Euler offset applied to the center weapon (X = pitch, Y = yaw, Z = roll).")]
+    public Vector3 centerLocalEulerOffset = Vector3.zero;
+
     // --- internal state ---
     private Transform[] slotTransforms;
     private List<ModularWeapon> attached;
@@ -75,6 +79,9 @@ public class ArmMount360 : MonoBehaviour
     }
     private WeaponSlideState[] slideStates;
 
+   
+    private Quaternion[] originalSlotLocalRot;
+
     private MethodInfo mi_FireInternal = null;
     private FieldInfo fi_lastShotTime = null;
 
@@ -89,12 +96,16 @@ public class ArmMount360 : MonoBehaviour
         slotTransforms = new Transform[slotCount];
         attached = new List<ModularWeapon>(new ModularWeapon[slotCount]);
         slideStates = new WeaponSlideState[slotCount];
+        originalSlotLocalRot = new Quaternion[slotCount];
+        for (int i = 0; i < slotCount; i++) originalSlotLocalRot[i] = Quaternion.identity;
 
         if (autoGenerateSlots)
             CreateSlotTransforms();
 
+        // initialize center via helper so center-state + rotation offset are applied properly
         centerIndex = 0;
         currentParentRotationY = weaponsParent.localEulerAngles.y;
+        UpdateCenterIndex(0);
 
         if (battery == null)
             battery = FindFirstObjectByType<ArmBattery>();
@@ -112,6 +123,8 @@ public class ArmMount360 : MonoBehaviour
             Debug.LogWarning($"ArmMount360: lineSlots length ({lineSlots.Length}) != slotCount ({slotCount}). Set to exactly {slotCount} or leave empty.");
         }
     }
+
+
 
     private void Update()
     {
@@ -180,6 +193,8 @@ public class ArmMount360 : MonoBehaviour
             slotGO.transform.localRotation = Quaternion.LookRotation(lookDir, Vector3.up);
 
             slotTransforms[i] = slotGO.transform;
+            // ensure default originalSlotLocalRot uses the slot's expected orientation
+            originalSlotLocalRot[i] = Quaternion.identity;
         }
     }
 
@@ -197,14 +212,24 @@ public class ArmMount360 : MonoBehaviour
             inst.transform.SetParent(slotTransforms[slot], false);
             inst.transform.localPosition = Vector3.zero;
             inst.transform.localRotation = Quaternion.identity;
+            originalSlotLocalRot[slot] = inst.transform.localRotation;
         }
         else
         {
             inst.transform.SetParent(weaponsParent, false);
+            originalSlotLocalRot[slot] = inst.transform.localRotation;
         }
 
         attached[slot] = inst;
         inst.SetParentMount(this, slot);
+
+        // if this slot is the current center, ensure center state and apply offset
+        if (slot == centerIndex)
+        {
+            inst.SetCenterState(true);
+            ApplyCenterRotation(slot);
+        }
+
         return slot;
     }
 
@@ -241,7 +266,7 @@ public class ArmMount360 : MonoBehaviour
         if (rotateCoroutine != null) StopCoroutine(rotateCoroutine);
         //use a blocking coroutine to rotate then fire
         yield return StartCoroutine(AnimateParentRotationBlocking(currentParentRotationY, targetParentY, rotateDuration, rotateEase));
-        centerIndex = nearest;
+        UpdateCenterIndex(nearest);
 
         // now fire it
         var w = attached[centerIndex];
@@ -273,7 +298,7 @@ public class ArmMount360 : MonoBehaviour
         if (rotateCoroutine != null) StopCoroutine(rotateCoroutine);
         rotateCoroutine = StartCoroutine(AnimateParentRotation(currentParentRotationY, targetParentY, rotateDuration, rotateEase));
 
-        centerIndex = newIndex;
+        UpdateCenterIndex(newIndex);
     }
 
     private IEnumerator AnimateParentRotationBlocking(float startY, float endY, float duration, float ease)
@@ -345,6 +370,9 @@ public class ArmMount360 : MonoBehaviour
         Vector3 dir = Vector3.forward;
         if (w.firePoint != null) dir = w.firePoint.forward;
         else dir = (slotTransforms[target] != null) ? slotTransforms[target].forward : transform.forward;
+
+        // restoring original rotation entry for this slot (clean up)
+        originalSlotLocalRot[target] = Quaternion.identity;
 
         w.TossOut(dir, forwardForce, upForce);
     }
@@ -524,7 +552,6 @@ public class ArmMount360 : MonoBehaviour
             }
         }
 
-        // Reparent all weapons to weaponsParent (preserve world pos) to lerp back
         for (int slotIdx = 0; slotIdx < n; slotIdx++)
         {
             var w = attached[slotIdx];
@@ -553,7 +580,6 @@ public class ArmMount360 : MonoBehaviour
             yield return null;
         }
 
-        // snap back & reparent to slotTransforms
         for (int slotIdx = 0; slotIdx < n; slotIdx++)
         {
             var w = attached[slotIdx];
@@ -563,6 +589,8 @@ public class ArmMount360 : MonoBehaviour
                 w.transform.SetParent(slotTransforms[slotIdx], false);
                 w.transform.localPosition = Vector3.zero;
                 w.transform.localRotation = Quaternion.identity;
+                // restore canonical rotation for slot now that weapon is back
+                originalSlotLocalRot[slotIdx] = w.transform.localRotation;
             }
             else
             {
@@ -570,12 +598,14 @@ public class ArmMount360 : MonoBehaviour
             }
         }
 
-        // restore parent rotation if changed
         if (rotateParentToCenterOnAbility)
         {
             if (rotateCoroutine != null) StopCoroutine(rotateCoroutine);
             rotateCoroutine = StartCoroutine(AnimateParentRotation(currentParentRotationY, startParentY, rotateDuration, rotateEase));
         }
+
+        // ensure center rotation is re-applied in case center weapon repositioning changed it
+        ApplyCenterRotation(centerIndex);
 
         abilityActive = false;
         StartCoroutine(AbilityCooldownCoroutine());
@@ -588,6 +618,8 @@ public class ArmMount360 : MonoBehaviour
             yield return null;
         abilityOnCooldown = false;
     }
+
+
 
     // -------------------- Helpers / Exposed --------------------
 
@@ -604,4 +636,65 @@ public class ArmMount360 : MonoBehaviour
     }
 
     public ModularWeapon[] GetAttachedSnapshot() => attached.ToArray();
+
+    // ---------- Center rotation helpers ----------
+
+    // centralize update logic for center state + apply rotation offsets
+    private void UpdateCenterIndex(int newIndex)
+    {
+        if (newIndex < 0 || newIndex >= slotCount) return;
+
+        int old = centerIndex;
+
+        if (old >= 0 && old < attached.Count)
+        {
+            var oldW = attached[old];
+            if (oldW != null)
+            {
+                oldW.SetCenterState(false);
+                RestoreOriginalLocalRotation(old);
+            }
+        }
+
+        centerIndex = newIndex;
+
+        if (centerIndex >= 0 && centerIndex < attached.Count)
+        {
+            var newW = attached[centerIndex];
+            if (newW != null)
+            {
+                newW.SetCenterState(true);
+                ApplyCenterRotation(centerIndex);
+            }
+        }
+    }
+
+    // apply configured local-euler offset on top of stored original local rotation for the slot
+    private void ApplyCenterRotation(int slot)
+    {
+        if (slot < 0 || slot >= attached.Count) return;
+        var w = attached[slot];
+        if (w == null) return;
+
+        Quaternion orig = Quaternion.identity;
+        if (originalSlotLocalRot != null && slot < originalSlotLocalRot.Length)
+            orig = originalSlotLocalRot[slot];
+
+        // rotation = offset * original
+        w.transform.localRotation = Quaternion.Euler(centerLocalEulerOffset) * orig;
+    }
+
+    // restore the canonical local rotation for a slot (used when leaving center)
+    private void RestoreOriginalLocalRotation(int slot)
+    {
+        if (slot < 0 || slot >= attached.Count) return;
+        var w = attached[slot];
+        if (w == null) return;
+
+        Quaternion orig = Quaternion.identity;
+        if (originalSlotLocalRot != null && slot < originalSlotLocalRot.Length)
+            orig = originalSlotLocalRot[slot];
+
+        w.transform.localRotation = orig;
+    }
 }
