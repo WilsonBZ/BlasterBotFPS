@@ -7,102 +7,71 @@ using UnityEngine;
 public class ArmMount360 : MonoBehaviour
 {
     [Header("Ring configuration")]
-    [Tooltip("Number of slots (should be odd, e.g. 7).")]
     public int slotCount = 7;
-    [Tooltip("Radius of ring in local space.")]
     public float radius = 1.0f;
-    [Tooltip("If true, auto-generate the slot transforms as children.")]
     public bool autoGenerateSlots = true;
 
-    [Header("Visual parent (rotates to show active center)")]
-    [Tooltip("Parent transform that holds the weapon instances. Rotating this will rotate the ring visually.")]
+    [Header("Visual parent")]
     public Transform weaponsParent;
 
     [Header("Gameplay")]
     public ArmBattery battery;
-    [Tooltip("How many shots per second the mount can perform (global fire rate).")]
     public float fireRate = 3f;
-    [Tooltip("How many seconds must pass between manual rotations (E/Q).")]
     public float turnRate = 0.12f;
-    [Tooltip("Energy multiplier applied when firing (if you want center to cost more).")]
     public float centerMultiplier = 1f;
 
     [Header("Rotation tween")]
-    [Tooltip("Seconds for ring to rotate visually when advancing to next gun.")]
     public float rotateDuration = 0.12f;
-    [Tooltip("Easing exponent for Lerp (1 = linear).")]
     public float rotateEase = 1.0f;
-    [Tooltip("Yaw offset applied to auto-generated slot rotations.")]
     public float modelYawOffset = -90f;
 
-    [Header("Input (keys)")]
+    [Header("Input")]
     public KeyCode tossKey = KeyCode.G;
-    public KeyCode rotateLeftKey = KeyCode.E;
-    public KeyCode rotateRightKey = KeyCode.Q;
     public KeyCode abilityKey = KeyCode.T;
     public bool handleInput = true;
-    [Header("Scroll wheel")]
-    [Tooltip("Allow cycling with the mouse scroll wheel.")]
     public bool allowScrollWheel = true;
 
-    [Header("Frontal Ability (LineSlots, Option B mapping)")]
-    [Tooltip("Explicit transforms in front of the player to use for ability. Size must equal slotCount. Slot index slotCount/2 is the center.")]
+    [Header("Frontal Ability")]
     public Transform[] lineSlots;
-    [Tooltip("Seconds that ability auto-fires and ignores battery.")]
     public float abilityDuration = 6f;
-    [Tooltip("Cooldown after ability ends (seconds).")]
     public float abilityCooldown = 10f;
-    [Tooltip("Slide animation duration to/from line slots (seconds).")]
     public float slideDuration = 0.18f;
-    [Tooltip("Should ability rotate the weaponsParent visually to center the center slot?")]
     public bool rotateParentToCenterOnAbility = true;
 
-    [Header("Center weapon rotation")]
-    [Tooltip("Local Euler offset applied to the center weapon (X = pitch, Y = yaw, Z = roll).")]
+    [Header("Center visuals")]
     public Vector3 centerLocalEulerOffset = Vector3.zero;
-    [Tooltip("Local position offset applied to the center weapon (typically left of the screen).")]
     public Vector3 centerLocalPositionOffset = new Vector3(-0.35f, -0.6f, 0.6f);
 
-    [Header("Side (next) weapon visual")]
-    [Tooltip("Local position offset applied to the 'next' weapon (typically right of the screen).")]
+    [Header("Side visuals")]
     public Vector3 sideLocalPositionOffset = new Vector3(0.45f, -0.45f, 0.6f);
-    [Tooltip("Local Euler offset applied to the 'next' weapon (tilt downwards to show butt).")]
     public Vector3 sideLocalEulerOffset = new Vector3(20f, 0f, 0f);
 
-    // --- internal state ---
     private Transform[] slotTransforms;
     private List<ModularWeapon> attached;
     private int centerIndex;
-    private int sideIndex = -1; // index of the weapon currently placed on the right side
+    private int sideIndex = -1;
     private float lastShotTime = -999f;
     private float lastRotateTime = -999f;
     private float currentParentRotationY = 0f;
-    private Coroutine rotateCoroutine = null;
+    private Coroutine rotateCoroutine;
 
-    private bool abilityActive = false;
-    private bool abilityOnCooldown = false;
+    private bool abilityActive;
+    private bool abilityOnCooldown;
 
-    private struct WeaponSlideState
-    {
-        public ModularWeapon weapon;
-        public Transform originalParent;
-        public Vector3 originalLocalPos;
-        public Quaternion originalLocalRot;
-    }
+    private struct WeaponSlideState { public ModularWeapon weapon; public Transform originalParent; public Vector3 originalLocalPos; public Quaternion originalLocalRot; }
     private WeaponSlideState[] slideStates;
 
     private Quaternion[] originalSlotLocalRot;
     private Vector3[] originalSlotLocalPos;
 
-    private MethodInfo mi_FireInternal = null;
-    private FieldInfo fi_lastShotTime = null;
+    private MethodInfo mi_FireInternal;
+    private FieldInfo fi_lastShotTime;
 
-    public List<GameObject> WeaponSockets ;
+    public List<GameObject> WeaponSockets;
 
     private void Awake()
     {
-        if (weaponsParent == null) weaponsParent = this.transform;
-
+        if (weaponsParent == null) weaponsParent = transform;
         if (slotCount <= 1) slotCount = 7;
 
         slotTransforms = new Transform[slotCount];
@@ -110,99 +79,48 @@ public class ArmMount360 : MonoBehaviour
         slideStates = new WeaponSlideState[slotCount];
         originalSlotLocalRot = new Quaternion[slotCount];
         originalSlotLocalPos = new Vector3[slotCount];
-        for (int i = 0; i < slotCount; i++)
-        {
-            originalSlotLocalRot[i] = Quaternion.identity;
-            originalSlotLocalPos[i] = Vector3.zero;
-        }
+        for (int i = 0; i < slotCount; i++) { originalSlotLocalRot[i] = Quaternion.identity; originalSlotLocalPos[i] = Vector3.zero; }
 
-        if (autoGenerateSlots)
-            CreateSlotTransforms();
+        if (autoGenerateSlots) CreateSlotTransforms();
 
-        // initialize center via helper so center-state + rotation offset are applied properly
         centerIndex = 0;
         currentParentRotationY = weaponsParent.localEulerAngles.y;
         sideIndex = -1;
         UpdateCenterIndex(0);
 
-        if (battery == null)
-            battery = FindFirstObjectByType<ArmBattery>();
+        if (battery == null) battery = FindFirstObjectByType<ArmBattery>();
 
         var mwType = typeof(ModularWeapon);
         mi_FireInternal = mwType.GetMethod("FireInternal", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
         fi_lastShotTime = mwType.GetField("lastShotTime", BindingFlags.Instance | BindingFlags.NonPublic);
-        if (mi_FireInternal == null || fi_lastShotTime == null)
-        {
-            Debug.LogWarning("ArmMount360: Reflection failed to locate ModularWeapon internals (FireInternal/lastShotTime). Ability will be disabled.");
-        }
+        if (mi_FireInternal == null || fi_lastShotTime == null) Debug.LogWarning("ArmMount360: Reflection failed; ability will be disabled.");
 
         if (lineSlots != null && lineSlots.Length > 0 && lineSlots.Length != slotCount)
-        {
-            Debug.LogWarning($"ArmMount360: lineSlots length ({lineSlots.Length}) != slotCount ({slotCount}). Set to exactly {slotCount} or leave empty.");
-        }
+            Debug.LogWarning($"ArmMount360: lineSlots length ({lineSlots.Length}) != slotCount ({slotCount}).");
     }
-
-
 
     private void Update()
     {
         if (!handleInput) return;
-
-        // Scroll wheel rotation (left/right only)
         if (allowScrollWheel)
         {
             float wheel = Input.GetAxis("Mouse ScrollWheel");
-            if (wheel > 0.0001f)
-            {
-                TryRotate(-1);
-            }
-            else if (wheel < -0.0001f)
-            {
-                TryRotate(+1);
-            }
+            if (wheel > 0.0001f) TryRotate(-1);
+            else if (wheel < -0.0001f) TryRotate(+1);
         }
 
-        // While abilityActive block normal inputs (you asked that ability blocks rotation/firing)
-        if (!abilityActive)
-        {
-            // Fire1: fire center only (if empty => rotate-to-nearest-occupied then fire)
-            if (Input.GetButton("Fire1"))
-                StartCoroutine(FireCenterOrRotateToNearestThenFire());
+        if (abilityActive) return;
+        if (Input.GetButton("Fire1")) StartCoroutine(FireCenterOrRotateToNearestThenFire());
+        if (Input.GetKeyDown(tossKey)) TossCenterGun();
+        if (Input.GetKeyDown(abilityKey) && !abilityOnCooldown) StartCoroutine(TryStartAbility());
+    }
 
-            // rotate keys
-            if (Input.GetKey(rotateLeftKey))
-                TryRotate(-1);
-            else if (Input.GetKey(rotateRightKey))
-                TryRotate(+1);
-
-            // toss center
-            if (Input.GetKeyDown(tossKey))
-                TossCenterGun();
-        }
-
-        // Ability activation (T)
-        if (Input.GetKeyDown(abilityKey))
-        {
-            if (!abilityActive && !abilityOnCooldown)
-            {
-                if (lineSlots == null || lineSlots.Length != slotCount)
-                {
-                    Debug.LogError("ArmMount360: lineSlots not set or wrong length. Ability aborted.");
-                }
-                else if (mi_FireInternal == null || fi_lastShotTime == null)
-                {
-                    Debug.LogError("ArmMount360: Ability aborted because ModularWeapon internals are not accessible via reflection.");
-                }
-                else if (AllSlotsEmpty())
-                {
-                    Debug.Log("ArmMount360: Ability aborted — no weapons attached.");
-                }
-                else
-                {
-                    StartCoroutine(RunFrontAbilityCoroutine());
-                }
-            }
-        }
+    private IEnumerator TryStartAbility()
+    {
+        if (lineSlots == null || lineSlots.Length != slotCount) { Debug.LogError("ArmMount360: lineSlots invalid."); yield break; }
+        if (mi_FireInternal == null || fi_lastShotTime == null) { Debug.LogError("ArmMount360: Ability aborted (reflection unavailable)."); yield break; }
+        if (AllSlotsEmpty()) { Debug.Log("ArmMount360: Ability aborted — no weapons attached."); yield break; }
+        yield return StartCoroutine(RunFrontAbilityCoroutine());
     }
 
     private void CreateSlotTransforms()
@@ -210,22 +128,17 @@ public class ArmMount360 : MonoBehaviour
         float angleStep = 360f / slotCount;
         for (int i = 0; i < slotCount; i++)
         {
-            GameObject slotGO = new GameObject($"RingSlot_{i}");
+            var slotGO = new GameObject($"RingSlot_{i}");
             slotGO.transform.SetParent(weaponsParent, false);
-            WeaponSockets.Add(slotGO);
-
+            WeaponSockets?.Add(slotGO);
             float angle = i * angleStep;
             float rad = Mathf.Deg2Rad * angle;
-            Vector3 localPos = new Vector3(Mathf.Sin(rad) * radius, 0f, Mathf.Cos(rad) * radius);
+            var localPos = new Vector3(Mathf.Sin(rad) * radius, 0f, Mathf.Cos(rad) * radius);
             slotGO.transform.localPosition = localPos;
-
-            slotGO.transform.localRotation = Quaternion.Euler(0f, angle + modelYawOffset, 0f);
-            Vector3 lookDir = (slotGO.transform.position - weaponsParent.position).normalized;
+            var lookDir = (slotGO.transform.position - weaponsParent.position).normalized;
             if (lookDir.sqrMagnitude < 0.0001f) lookDir = Vector3.forward;
             slotGO.transform.localRotation = Quaternion.LookRotation(lookDir, Vector3.up);
-
             slotTransforms[i] = slotGO.transform;
-            // ensure default originalSlotLocalRot uses the slot's expected orientation
             originalSlotLocalRot[i] = Quaternion.identity;
             originalSlotLocalPos[i] = slotGO.transform.localPosition;
         }
@@ -234,89 +147,41 @@ public class ArmMount360 : MonoBehaviour
     public int AttachWeapon(ModularWeapon prefab)
     {
         if (prefab == null) return -1;
-        int slot = FindFirstEmptySlot();
+        int slot = attached.FindIndex(w => w == null);
         if (slot < 0) return -1;
 
-        GameObject instGO = Instantiate(prefab.gameObject, weaponsParent);
-        ModularWeapon inst = instGO.GetComponent<ModularWeapon>();
+        var instGO = Instantiate(prefab.gameObject, weaponsParent);
+        var inst = instGO.GetComponent<ModularWeapon>();
+        if (slotTransforms[slot] != null) { inst.transform.SetParent(slotTransforms[slot], false); inst.transform.localPosition = Vector3.zero; inst.transform.localRotation = Quaternion.identity; }
+        else inst.transform.SetParent(weaponsParent, false);
 
-        if (slotTransforms[slot] != null)
-        {
-            inst.transform.SetParent(slotTransforms[slot], false);
-            inst.transform.localPosition = Vector3.zero;
-            inst.transform.localRotation = Quaternion.identity;
-            originalSlotLocalRot[slot] = inst.transform.localRotation;
-            originalSlotLocalPos[slot] = inst.transform.localPosition;
-        }
-        else
-        {
-            inst.transform.SetParent(weaponsParent, false);
-            originalSlotLocalRot[slot] = inst.transform.localRotation;
-            originalSlotLocalPos[slot] = inst.transform.localPosition;
-        }
-
+        originalSlotLocalRot[slot] = inst.transform.localRotation;
+        originalSlotLocalPos[slot] = inst.transform.localPosition;
         attached[slot] = inst;
         inst.SetParentMount(this, slot);
 
-        // if this slot is the current center, ensure center state and apply offset
-        if (slot == centerIndex)
-        {
-            inst.SetCenterState(true);
-            ApplyCenterRotation(slot);
-            ApplyCenterPosition(slot);
-        }
-        else if (slot == sideIndex)
-        {
-            ApplySidePosition(slot);
-            ApplySideRotation(slot);
-        }
-
+        if (slot == centerIndex) { inst.SetCenterState(true); ApplyCenterRotation(slot); ApplyCenterPosition(slot); }
+        else if (slot == sideIndex) { ApplySidePosition(slot); ApplySideRotation(slot); }
         return slot;
     }
-
-    private int FindFirstEmptySlot()
-    {
-        for (int i = 0; i < attached.Count; i++)
-            if (attached[i] == null) return i;
-        return -1;
-    }
-
 
     private IEnumerator FireCenterOrRotateToNearestThenFire()
     {
         float minInterval = 1f / Mathf.Max(0.0001f, fireRate);
         if (Time.time - lastShotTime < minInterval) yield break;
-
-        ModularWeapon centerWeapon = attached[centerIndex];
-        if (centerWeapon != null)
-        {
-            Camera cam = Camera.main;
-            centerWeapon.TryFire(battery, cam, centerMultiplier);
-            lastShotTime = Time.time;
-            yield break;
-        }
+        var centerWeapon = attached[centerIndex];
+        if (centerWeapon != null) { centerWeapon.TryFire(battery, Camera.main, centerMultiplier); lastShotTime = Time.time; yield break; }
 
         int nearest = FindNearestOccupiedSlot(centerIndex);
-        if (nearest == centerIndex || attached[nearest] == null)
-        {
-            yield break;
-        }
+        if (nearest == centerIndex || attached[nearest] == null) yield break;
 
         float angleStep = 360f / slotCount;
         float targetParentY = -nearest * angleStep;
         if (rotateCoroutine != null) StopCoroutine(rotateCoroutine);
-        //use a blocking coroutine to rotate then fire
         yield return StartCoroutine(AnimateParentRotationBlocking(currentParentRotationY, targetParentY, rotateDuration, rotateEase));
         UpdateCenterIndex(nearest);
-
-        // now fire it
         var w = attached[centerIndex];
-        if (w != null)
-        {
-            Camera cam = Camera.main;
-            w.TryFire(battery, cam, centerMultiplier);
-            lastShotTime = Time.time;
-        }
+        if (w != null) { w.TryFire(battery, Camera.main, centerMultiplier); lastShotTime = Time.time; }
     }
 
     private void TryRotate(int delta)
@@ -329,64 +194,41 @@ public class ArmMount360 : MonoBehaviour
     private void AdvanceBy(int delta)
     {
         if (slotCount <= 0) return;
-
         int newIndex = (centerIndex + delta) % slotCount;
         if (newIndex < 0) newIndex += slotCount;
-
-        // start a coroutine that animates both parent rotation and weapon transform swap
         if (rotateCoroutine != null) StopCoroutine(rotateCoroutine);
         rotateCoroutine = StartCoroutine(RotateAndSwapCoroutine(centerIndex, newIndex, rotateDuration, rotateEase));
     }
 
-    // coroutine to animate parent rotation and lerp the old/new center weapon transforms
     private IEnumerator RotateAndSwapCoroutine(int oldIndex, int newIndex, float duration, float ease)
     {
-        if (oldIndex == newIndex)
-        {
-            rotateCoroutine = null;
-            yield break;
-        }
-
+        if (oldIndex == newIndex) { rotateCoroutine = null; yield break; }
         float t = 0f;
         float from = NormalizeAngle(currentParentRotationY);
         float angleStep = 360f / slotCount;
         float to = NormalizeAngle(-newIndex * angleStep);
         float delta = ShortestAngleDelta(from, to);
 
-        // cached weapons
-        ModularWeapon oldW = (oldIndex >= 0 && oldIndex < attached.Count) ? attached[oldIndex] : null;
-        ModularWeapon newW = (newIndex >= 0 && newIndex < attached.Count) ? attached[newIndex] : null;
+        var oldW = oldIndex >= 0 && oldIndex < attached.Count ? attached[oldIndex] : null;
+        var newW = newIndex >= 0 && newIndex < attached.Count ? attached[newIndex] : null;
 
-        // compute original local positions/rots used as start/end
-        Vector3 oldStartPos = Vector3.zero;
-        Quaternion oldStartRot = Quaternion.identity;
-        Vector3 oldTargetPos = Vector3.zero;
-        Quaternion oldTargetRot = Quaternion.identity;
-
-        Vector3 newStartPos = Vector3.zero;
-        Quaternion newStartRot = Quaternion.identity;
-        Vector3 newTargetPos = Vector3.zero;
-        Quaternion newTargetRot = Quaternion.identity;
+        Vector3 oldStartPos = Vector3.zero; Quaternion oldStartRot = Quaternion.identity; Vector3 oldTargetPos = Vector3.zero; Quaternion oldTargetRot = Quaternion.identity;
+        Vector3 newStartPos = Vector3.zero; Quaternion newStartRot = Quaternion.identity; Vector3 newTargetPos = Vector3.zero; Quaternion newTargetRot = Quaternion.identity;
 
         if (oldW != null)
         {
             oldStartPos = oldW.transform.localPosition;
             oldStartRot = oldW.transform.localRotation;
-            // old should move to side position
             oldTargetPos = (originalSlotLocalPos.Length > oldIndex ? originalSlotLocalPos[oldIndex] : Vector3.zero) + sideLocalPositionOffset;
             oldTargetRot = Quaternion.Euler(sideLocalEulerOffset) * (originalSlotLocalRot.Length > oldIndex ? originalSlotLocalRot[oldIndex] : Quaternion.identity);
         }
 
         if (newW != null)
         {
-            // new should move from side to center
             newStartPos = (originalSlotLocalPos.Length > newIndex ? originalSlotLocalPos[newIndex] : Vector3.zero) + sideLocalPositionOffset;
             newStartRot = Quaternion.Euler(sideLocalEulerOffset) * (originalSlotLocalRot.Length > newIndex ? originalSlotLocalRot[newIndex] : Quaternion.identity);
             newTargetPos = (originalSlotLocalPos.Length > newIndex ? originalSlotLocalPos[newIndex] : Vector3.zero) + centerLocalPositionOffset;
             newTargetRot = Quaternion.Euler(centerLocalEulerOffset) * (originalSlotLocalRot.Length > newIndex ? originalSlotLocalRot[newIndex] : Quaternion.identity);
-
-            // ensure the starting world transform is consistent (if the newW was previously at its original pos)
-            // set its transform to the side start so lerp goes from side->center visually
             newW.transform.localPosition = newStartPos;
             newW.transform.localRotation = newStartRot;
         }
@@ -399,41 +241,24 @@ public class ArmMount360 : MonoBehaviour
             float current = from + delta * u;
             weaponsParent.localEulerAngles = new Vector3(0f, current, 0f);
             currentParentRotationY = current;
-
             float v = Mathf.SmoothStep(0f, 1f, u);
-
-            if (oldW != null)
-            {
-                oldW.transform.localPosition = Vector3.Lerp(oldStartPos, oldTargetPos, v);
-                oldW.transform.localRotation = Quaternion.Slerp(oldStartRot, oldTargetRot, v);
-            }
-            if (newW != null)
-            {
-                newW.transform.localPosition = Vector3.Lerp(newStartPos, newTargetPos, v);
-                newW.transform.localRotation = Quaternion.Slerp(newStartRot, newTargetRot, v);
-            }
-
+            if (oldW != null) { oldW.transform.localPosition = Vector3.Lerp(oldStartPos, oldTargetPos, v); oldW.transform.localRotation = Quaternion.Slerp(oldStartRot, oldTargetRot, v); }
+            if (newW != null) { newW.transform.localPosition = Vector3.Lerp(newStartPos, newTargetPos, v); newW.transform.localRotation = Quaternion.Slerp(newStartRot, newTargetRot, v); }
             yield return null;
         }
 
-        // finalize parent rotation
         weaponsParent.localEulerAngles = new Vector3(0f, to, 0f);
         currentParentRotationY = to;
-
-        // finalize weapon states by calling UpdateCenterIndex which will set center state and rotations/positions
         UpdateCenterIndex(newIndex);
-
         rotateCoroutine = null;
     }
 
     private IEnumerator AnimateParentRotationBlocking(float startY, float endY, float duration, float ease)
     {
-        // use the same logic as AnimateParentRotation but blocking (no rotateCoroutine set)
         float t = 0f;
         float from = NormalizeAngle(startY);
         float to = NormalizeAngle(endY);
         float delta = ShortestAngleDelta(from, to);
-
         while (t < duration)
         {
             t += Time.deltaTime;
@@ -444,31 +269,26 @@ public class ArmMount360 : MonoBehaviour
             currentParentRotationY = current;
             yield return null;
         }
-
         weaponsParent.localEulerAngles = new Vector3(0f, to, 0f);
         currentParentRotationY = to;
     }
 
-    // Non-blocking rotation coroutine (used by AdvanceBy and ability)
     private IEnumerator AnimateParentRotation(float startY, float endY, float duration, float ease)
     {
         float t = 0f;
         float from = NormalizeAngle(startY);
         float to = NormalizeAngle(endY);
         float delta = ShortestAngleDelta(from, to);
-
         while (t < duration)
         {
             t += Time.deltaTime;
             float u = Mathf.Clamp01(duration <= 0f ? 1f : t / duration);
             if (Mathf.Abs(ease - 1f) > 0.001f) u = Mathf.Pow(u, ease);
-
             float current = from + delta * u;
             weaponsParent.localEulerAngles = new Vector3(0f, current, 0f);
             currentParentRotationY = current;
             yield return null;
         }
-
         weaponsParent.localEulerAngles = new Vector3(0f, to, 0f);
         currentParentRotationY = to;
         rotateCoroutine = null;
@@ -477,28 +297,15 @@ public class ArmMount360 : MonoBehaviour
     private float NormalizeAngle(float a) => Mathf.Repeat(a + 180f, 360f) - 180f;
     private float ShortestAngleDelta(float a, float b) => Mathf.Repeat(b - a + 180f, 360f) - 180f;
 
-    // Toss the weapon at center (or nearest occupied) — unchanged
     public void TossCenterGun(float forwardForce = 5f, float upForce = 1.2f)
     {
         if (AllSlotsEmpty()) return;
-
         int target = centerIndex;
-        if (attached[target] == null)
-        {
-            target = FindNearestOccupiedSlot(centerIndex);
-            if (attached[target] == null) return;
-        }
-
-        ModularWeapon w = attached[target];
+        if (attached[target] == null) { target = FindNearestOccupiedSlot(centerIndex); if (attached[target] == null) return; }
+        var w = attached[target];
         attached[target] = null;
-
-        Vector3 dir = Vector3.forward;
-        if (w.firePoint != null) dir = w.firePoint.forward;
-        else dir = (slotTransforms[target] != null) ? slotTransforms[target].forward : transform.forward;
-
-        // restoring original rotation entry for this slot (clean up)
+        Vector3 dir = w.firePoint != null ? w.firePoint.forward : (slotTransforms[target] != null ? slotTransforms[target].forward : transform.forward);
         originalSlotLocalRot[target] = Quaternion.identity;
-
         w.TossOut(dir, forwardForce, upForce);
     }
 
@@ -522,12 +329,9 @@ public class ArmMount360 : MonoBehaviour
         return start;
     }
 
-    // FireAll used by ability (calls TryFireAllowNoBattery in earlier versions — here we use reflection)
     public void FireAll(bool ignoreBattery)
     {
-        // Not used in this script (ability uses reflection per-weapon internally),
-        // but kept for compatibility if you want to call it externally.
-        Camera cam = Camera.main;
+        var cam = Camera.main;
         for (int i = 0; i < attached.Count; i++)
         {
             var w = attached[i];
@@ -537,63 +341,35 @@ public class ArmMount360 : MonoBehaviour
         }
     }
 
-    // -------------------- Ability (Option B mapping) --------------------
-
     private IEnumerator RunFrontAbilityCoroutine()
     {
         abilityActive = true;
         abilityOnCooldown = true;
-
         int n = slotCount;
         int half = n / 2;
-
-        // store original states
         for (int i = 0; i < n; i++)
         {
             var w = attached[i];
             slideStates[i].weapon = w;
-            slideStates[i].originalParent = (w != null) ? w.transform.parent : null;
-            if (w != null)
-            {
-                slideStates[i].originalLocalPos = w.transform.localPosition;
-                slideStates[i].originalLocalRot = w.transform.localRotation;
-            }
-            else
-            {
-                slideStates[i].originalLocalPos = Vector3.zero;
-                slideStates[i].originalLocalRot = Quaternion.identity;
-            }
+            slideStates[i].originalParent = w != null ? w.transform.parent : null;
+            if (w != null) { slideStates[i].originalLocalPos = w.transform.localPosition; slideStates[i].originalLocalRot = w.transform.localRotation; }
+            else { slideStates[i].originalLocalPos = Vector3.zero; slideStates[i].originalLocalRot = Quaternion.identity; }
         }
 
-        // Build ordered indices left->center->right (Option B)
         int[] orderIndices = new int[n];
-        for (int j = 0; j < n; j++)
-            orderIndices[j] = (centerIndex - half + j + n) % n;
-
-        // Inverse: slotIdx -> line index
+        for (int j = 0; j < n; j++) orderIndices[j] = (centerIndex - half + j + n) % n;
         int[] targetLineIndexForSlot = new int[n];
-        for (int j = 0; j < n; j++)
-        {
-            int slotIdx = orderIndices[j];
-            targetLineIndexForSlot[slotIdx] = j;
-        }
+        for (int j = 0; j < n; j++) targetLineIndexForSlot[orderIndices[j]] = j;
 
-        // Reparent each weapon to its target lineSlot (preserve world)
         for (int slotIdx = 0; slotIdx < n; slotIdx++)
         {
             var w = attached[slotIdx];
             if (w == null) continue;
-            int targetLineIdx = targetLineIndexForSlot[slotIdx];
-            Transform tParent = lineSlots[targetLineIdx];
-            if (tParent == null)
-            {
-                Debug.LogWarning("ArmMount360: lineSlots contains null entry. Skipping.");
-                continue;
-            }
+            var tParent = lineSlots[targetLineIndexForSlot[slotIdx]];
+            if (tParent == null) { Debug.LogWarning("ArmMount360: lineSlots contains null entry. Skipping."); continue; }
             w.transform.SetParent(tParent, true);
         }
 
-        // Optionally rotate weaponsParent so center visually faces front
         float startParentY = currentParentRotationY;
         if (rotateParentToCenterOnAbility)
         {
@@ -603,27 +379,21 @@ public class ArmMount360 : MonoBehaviour
             rotateCoroutine = StartCoroutine(AnimateParentRotation(currentParentRotationY, -targetSlotAngle, rotateDuration, rotateEase));
         }
 
-        // Slide into lineSlots (local -> zero)
         float elapsed = 0f;
         while (elapsed < slideDuration)
         {
             elapsed += Time.deltaTime;
-            float u = Mathf.Clamp01(elapsed / slideDuration);
-            float easeU = Mathf.SmoothStep(0f, 1f, u);
-
+            float easeU = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / slideDuration));
             for (int slotIdx = 0; slotIdx < n; slotIdx++)
             {
                 var w = attached[slotIdx];
                 if (w == null) continue;
-                Vector3 from = w.transform.localPosition;
-                Quaternion fromR = w.transform.localRotation;
-                w.transform.localPosition = Vector3.Lerp(from, Vector3.zero, easeU);
-                w.transform.localRotation = Quaternion.Slerp(fromR, Quaternion.identity, easeU);
+                w.transform.localPosition = Vector3.Lerp(w.transform.localPosition, Vector3.zero, easeU);
+                w.transform.localRotation = Quaternion.Slerp(w.transform.localRotation, Quaternion.identity, easeU);
             }
             yield return null;
         }
 
-        // snap to zero
         for (int slotIdx = 0; slotIdx < n; slotIdx++)
         {
             var w = attached[slotIdx];
@@ -632,7 +402,6 @@ public class ArmMount360 : MonoBehaviour
             w.transform.localRotation = Quaternion.identity;
         }
 
-        // AUTO-FIRE using reflection: call FireInternal and update lastShotTime
         float abilityStart = Time.time;
         while (Time.time < abilityStart + abilityDuration)
         {
@@ -641,25 +410,16 @@ public class ArmMount360 : MonoBehaviour
             {
                 var w = attached[slotIdx];
                 if (w == null) continue;
-
                 float weaponFireRate = Mathf.Max(0.0001f, w.fireRate);
                 float interval = 1f / weaponFireRate;
-
                 float last = 0f;
                 object lastObj = fi_lastShotTime.GetValue(w);
                 if (lastObj is float f) last = f;
-
-                if (now - last >= interval)
-                {
-                    // center weapon: we could pass Camera.main for camera-aiming; for simplicity we pass null so all fire straight.
-                    mi_FireInternal.Invoke(w, new object[] { null });
-                    fi_lastShotTime.SetValue(w, now);
-                }
+                if (now - last >= interval) { mi_FireInternal.Invoke(w, new object[] { null }); fi_lastShotTime.SetValue(w, now); }
             }
             yield return null;
         }
 
-        // Slide back: compute targets in weaponsParent local space
         Vector3[] backTargetsLocal = new Vector3[n];
         Quaternion[] backTargetsLocalRot = new Quaternion[n];
         for (int i = 0; i < n; i++)
@@ -670,11 +430,7 @@ public class ArmMount360 : MonoBehaviour
                 backTargetsLocal[i] = weaponsParent.InverseTransformPoint(worldTarget);
                 backTargetsLocalRot[i] = slotTransforms[i].localRotation;
             }
-            else
-            {
-                backTargetsLocal[i] = Vector3.zero;
-                backTargetsLocalRot[i] = Quaternion.identity;
-            }
+            else { backTargetsLocal[i] = Vector3.zero; backTargetsLocalRot[i] = Quaternion.identity; }
         }
 
         for (int slotIdx = 0; slotIdx < n; slotIdx++)
@@ -688,19 +444,13 @@ public class ArmMount360 : MonoBehaviour
         while (backElapsed < slideDuration)
         {
             backElapsed += Time.deltaTime;
-            float u = Mathf.Clamp01(backElapsed / slideDuration);
-            float easeU = Mathf.SmoothStep(0f, 1f, u);
-
+            float easeU = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(backElapsed / slideDuration));
             for (int slotIdx = 0; slotIdx < n; slotIdx++)
             {
                 var w = attached[slotIdx];
                 if (w == null) continue;
-                Vector3 from = w.transform.localPosition;
-                Quaternion fromR = w.transform.localRotation;
-                Vector3 to = backTargetsLocal[slotIdx];
-                Quaternion toR = backTargetsLocalRot[slotIdx];
-                w.transform.localPosition = Vector3.Lerp(from, to, easeU);
-                w.transform.localRotation = Quaternion.Slerp(fromR, toR, easeU);
+                w.transform.localPosition = Vector3.Lerp(w.transform.localPosition, backTargetsLocal[slotIdx], easeU);
+                w.transform.localRotation = Quaternion.Slerp(w.transform.localRotation, backTargetsLocalRot[slotIdx], easeU);
             }
             yield return null;
         }
@@ -714,14 +464,10 @@ public class ArmMount360 : MonoBehaviour
                 w.transform.SetParent(slotTransforms[slotIdx], false);
                 w.transform.localPosition = Vector3.zero;
                 w.transform.localRotation = Quaternion.identity;
-                // restore canonical rotation for slot now that weapon is back
                 originalSlotLocalRot[slotIdx] = w.transform.localRotation;
                 originalSlotLocalPos[slotIdx] = w.transform.localPosition;
             }
-            else
-            {
-                w.transform.SetParent(weaponsParent, true);
-            }
+            else w.transform.SetParent(weaponsParent, true);
         }
 
         if (rotateParentToCenterOnAbility)
@@ -730,10 +476,8 @@ public class ArmMount360 : MonoBehaviour
             rotateCoroutine = StartCoroutine(AnimateParentRotation(currentParentRotationY, startParentY, rotateDuration, rotateEase));
         }
 
-        // ensure center rotation is re-applied in case center weapon repositioning changed it
         ApplyCenterRotation(centerIndex);
         ApplyCenterPosition(centerIndex);
-
         abilityActive = false;
         StartCoroutine(AbilityCooldownCoroutine());
     }
@@ -741,98 +485,49 @@ public class ArmMount360 : MonoBehaviour
     private IEnumerator AbilityCooldownCoroutine()
     {
         float start = Time.time;
-        while (Time.time < start + abilityCooldown)
-            yield return null;
+        while (Time.time < start + abilityCooldown) yield return null;
         abilityOnCooldown = false;
     }
 
-
-
-    // -------------------- Helpers / Exposed --------------------
-
-    public void FireCenterAndAdvance(int direction)
-    {
-        // compatibility helper: fire then rotate
-        StartCoroutine(FireCenterThenAdvanceCoroutine(direction));
-    }
-
-    private IEnumerator FireCenterThenAdvanceCoroutine(int direction)
-    {
-        yield return StartCoroutine(FireCenterOrRotateToNearestThenFire());
-        AdvanceBy(direction);
-    }
+    public void FireCenterAndAdvance(int direction) { StartCoroutine(FireCenterThenAdvanceCoroutine(direction)); }
+    private IEnumerator FireCenterThenAdvanceCoroutine(int direction) { yield return StartCoroutine(FireCenterOrRotateToNearestThenFire()); AdvanceBy(direction); }
 
     public ModularWeapon[] GetAttachedSnapshot() => attached.ToArray();
 
-    // ---------- Center rotation helpers ----------
-
-    // centralize update logic for center state + apply rotation offsets
     private void UpdateCenterIndex(int newIndex)
     {
         if (newIndex < 0 || newIndex >= slotCount) return;
-
         int old = centerIndex;
-
         if (old >= 0 && old < attached.Count)
         {
             var oldW = attached[old];
-            if (oldW != null)
-            {
-                oldW.SetCenterState(false);
-                RestoreOriginalLocalRotation(old);
-                RestoreOriginalLocalPosition(old);
-            }
+            if (oldW != null) { oldW.SetCenterState(false); RestoreOriginalLocalRotation(old); RestoreOriginalLocalPosition(old); }
         }
 
         centerIndex = newIndex;
-
-        // determine which slot should be the "next" (right on screen)
         int newSide = (centerIndex + 1) % slotCount;
-
-        // restore previous side if different
-        if (sideIndex >= 0 && sideIndex != newSide && sideIndex < attached.Count)
-        {
-            RestoreOriginalLocalRotation(sideIndex);
-            RestoreOriginalLocalPosition(sideIndex);
-        }
-
+        if (sideIndex >= 0 && sideIndex != newSide && sideIndex < attached.Count) { RestoreOriginalLocalRotation(sideIndex); RestoreOriginalLocalPosition(sideIndex); }
         sideIndex = newSide;
 
         if (centerIndex >= 0 && centerIndex < attached.Count)
         {
             var newW = attached[centerIndex];
-            if (newW != null)
-            {
-                newW.SetCenterState(true);
-                ApplyCenterRotation(centerIndex);
-                ApplyCenterPosition(centerIndex);
-            }
+            if (newW != null) { newW.SetCenterState(true); ApplyCenterRotation(centerIndex); ApplyCenterPosition(centerIndex); }
         }
 
-        // apply side offsets to the next weapon (to the right)
         if (sideIndex >= 0 && sideIndex < attached.Count)
         {
             var sideW = attached[sideIndex];
-            if (sideW != null)
-            {
-                ApplySideRotation(sideIndex);
-                ApplySidePosition(sideIndex);
-            }
+            if (sideW != null) { ApplySideRotation(sideIndex); ApplySidePosition(sideIndex); }
         }
     }
 
-    // apply configured local-euler offset on top of stored original local rotation for the slot
     private void ApplyCenterRotation(int slot)
     {
         if (slot < 0 || slot >= attached.Count) return;
         var w = attached[slot];
         if (w == null) return;
-
-        Quaternion orig = Quaternion.identity;
-        if (originalSlotLocalRot != null && slot < originalSlotLocalRot.Length)
-            orig = originalSlotLocalRot[slot];
-
-        // rotation = offset * original
+        Quaternion orig = originalSlotLocalRot != null && slot < originalSlotLocalRot.Length ? originalSlotLocalRot[slot] : Quaternion.identity;
         w.transform.localRotation = Quaternion.Euler(centerLocalEulerOffset) * orig;
     }
 
@@ -841,11 +536,7 @@ public class ArmMount360 : MonoBehaviour
         if (slot < 0 || slot >= attached.Count) return;
         var w = attached[slot];
         if (w == null) return;
-
-        Vector3 orig = Vector3.zero;
-        if (originalSlotLocalPos != null && slot < originalSlotLocalPos.Length)
-            orig = originalSlotLocalPos[slot];
-
+        Vector3 orig = originalSlotLocalPos != null && slot < originalSlotLocalPos.Length ? originalSlotLocalPos[slot] : Vector3.zero;
         w.transform.localPosition = orig + centerLocalPositionOffset;
     }
 
@@ -854,11 +545,7 @@ public class ArmMount360 : MonoBehaviour
         if (slot < 0 || slot >= attached.Count) return;
         var w = attached[slot];
         if (w == null) return;
-
-        Quaternion orig = Quaternion.identity;
-        if (originalSlotLocalRot != null && slot < originalSlotLocalRot.Length)
-            orig = originalSlotLocalRot[slot];
-
+        Quaternion orig = originalSlotLocalRot != null && slot < originalSlotLocalRot.Length ? originalSlotLocalRot[slot] : Quaternion.identity;
         w.transform.localRotation = Quaternion.Euler(sideLocalEulerOffset) * orig;
     }
 
@@ -867,25 +554,16 @@ public class ArmMount360 : MonoBehaviour
         if (slot < 0 || slot >= attached.Count) return;
         var w = attached[slot];
         if (w == null) return;
-
-        Vector3 orig = Vector3.zero;
-        if (originalSlotLocalPos != null && slot < originalSlotLocalPos.Length)
-            orig = originalSlotLocalPos[slot];
-
+        Vector3 orig = originalSlotLocalPos != null && slot < originalSlotLocalPos.Length ? originalSlotLocalPos[slot] : Vector3.zero;
         w.transform.localPosition = orig + sideLocalPositionOffset;
     }
 
-    // restore the canonical local rotation for a slot (used when leaving center)
     private void RestoreOriginalLocalRotation(int slot)
     {
         if (slot < 0 || slot >= attached.Count) return;
         var w = attached[slot];
         if (w == null) return;
-
-        Quaternion orig = Quaternion.identity;
-        if (originalSlotLocalRot != null && slot < originalSlotLocalRot.Length)
-            orig = originalSlotLocalRot[slot];
-
+        Quaternion orig = originalSlotLocalRot != null && slot < originalSlotLocalRot.Length ? originalSlotLocalRot[slot] : Quaternion.identity;
         w.transform.localRotation = orig;
     }
 
@@ -894,11 +572,7 @@ public class ArmMount360 : MonoBehaviour
         if (slot < 0 || slot >= attached.Count) return;
         var w = attached[slot];
         if (w == null) return;
-
-        Vector3 orig = Vector3.zero;
-        if (originalSlotLocalPos != null && slot < originalSlotLocalPos.Length)
-            orig = originalSlotLocalPos[slot];
-
+        Vector3 orig = originalSlotLocalPos != null && slot < originalSlotLocalPos.Length ? originalSlotLocalPos[slot] : Vector3.zero;
         w.transform.localPosition = orig;
     }
 }
