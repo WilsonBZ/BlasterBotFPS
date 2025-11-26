@@ -408,7 +408,6 @@ public class ArmMount360 : MonoBehaviour
             }
         }
 
-        // mapping slot -> line index (left->center->right)
         int[] orderIndices = new int[n];
         for (int j = 0; j < n; j++)
             orderIndices[j] = (centerIndex - half + j + n) % n;
@@ -420,23 +419,35 @@ public class ArmMount360 : MonoBehaviour
             targetLineIndexForSlot[slotIdx] = j;
         }
 
-        // compute aim point from camera (crosshair center)
         Camera cam = Camera.main;
         Vector3 aimPoint;
         if (cam != null)
         {
             Ray aimRay = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-            if (Physics.Raycast(aimRay, out var hit, 1000f))
-                aimPoint = hit.point;
-            else
-                aimPoint = aimRay.GetPoint(1000f);
+            RaycastHit[] hits = Physics.RaycastAll(aimRay, 1000f);
+            aimPoint = aimRay.GetPoint(1000f);
+            foreach (var h in hits)
+            {
+                if (h.collider == null) continue;
+                var root = h.collider.transform.root;
+                bool isWeapon = false;
+                for (int k = 0; k < n; k++)
+                {
+                    if (attached[k] == null) continue;
+                    if (attached[k].transform == root || attached[k].transform.root == root) { isWeapon = true; break; }
+                }
+                if (isWeapon) continue;
+                if (root == transform.root) continue;
+                aimPoint = h.point;
+                break;
+            }
         }
         else
         {
             aimPoint = transform.position + transform.forward * 50f;
         }
 
-        // Reparent each weapon to weaponsParent to simplify world-space lerps (preserve world)
+        // reparent to weaponsParent (preserve world) to simplify world-space lerps
         for (int slotIdx = 0; slotIdx < n; slotIdx++)
         {
             var w = attached[slotIdx];
@@ -444,7 +455,9 @@ public class ArmMount360 : MonoBehaviour
             w.transform.SetParent(weaponsParent, true);
         }
 
-        // Slide into lineSlots (or computed line if lineSlots null) and rotate each to face the aimPoint
+        // forward direction (we want guns facing camera forward)
+        Vector3 uniformForward = (cam != null) ? cam.transform.forward : weaponsParent.forward;
+
         float elapsed = 0f;
         while (elapsed < slideDuration)
         {
@@ -460,46 +473,36 @@ public class ArmMount360 : MonoBehaviour
                 Vector3 startWorld = w.transform.position;
                 Quaternion startRot = w.transform.rotation;
 
-                // target world position: use configured lineSlots if present and correctly sized, otherwise compute a simple line in front of camera
                 Vector3 targetWorld;
                 if (lineSlots != null && lineSlots.Length == n)
                     targetWorld = lineSlots[targetLineIndexForSlot[slotIdx]].position;
                 else
                 {
-                    // fallback: spread along perpendicular axis centered in front of camera
+                    float spacing = 0.6f;
+                    int mid = n / 2;
                     if (cam != null)
                     {
-                        float spacing = 0.6f; // meters between slots — tweak as needed
-                        int mid = n / 2;
                         Vector3 right = cam.transform.right;
-                        Vector3 basePos = cam.transform.position + cam.transform.forward * 5f + Vector3.up * (centerLocalPositionOffset.y);
+                        Vector3 basePos = cam.transform.position + cam.transform.forward * 5f + Vector3.up * centerLocalPositionOffset.y;
                         targetWorld = basePos + right * ((slotIdx - mid) * spacing);
                     }
                     else
                     {
-                        // no camera: place relative to weaponsParent forward
-                        float spacing = 0.6f;
-                        int mid = n / 2;
                         Vector3 right = weaponsParent.right;
-                        Vector3 basePos = weaponsParent.position + weaponsParent.forward * 5f + Vector3.up * (centerLocalPositionOffset.y);
+                        Vector3 basePos = weaponsParent.position + weaponsParent.forward * 5f + Vector3.up * centerLocalPositionOffset.y;
                         targetWorld = basePos + right * ((slotIdx - mid) * spacing);
                     }
                 }
 
-                // compute rotation to look at aim point from the target position
-                Vector3 dir = (aimPoint - targetWorld).normalized;
-                if (dir.sqrMagnitude < 0.0001f) dir = Vector3.forward;
-                Quaternion targetRot = Quaternion.LookRotation(dir, Vector3.up) * Quaternion.Euler(centerLocalEulerOffset);
+                Quaternion targetRot = Quaternion.LookRotation(uniformForward, Vector3.up) * Quaternion.Euler(centerLocalEulerOffset);
 
-                // lerp world position & rotation
                 w.transform.position = Vector3.Lerp(startWorld, targetWorld, easeU);
                 w.transform.rotation = Quaternion.Slerp(startRot, targetRot, easeU);
             }
-
             yield return null;
         }
 
-        // snap to final lined positions/rotations
+        // snap to final lined positions with uniform forward-facing rotation
         for (int slotIdx = 0; slotIdx < n; slotIdx++)
         {
             var w = attached[slotIdx];
@@ -510,34 +513,29 @@ public class ArmMount360 : MonoBehaviour
                 finalWorld = lineSlots[targetLineIndexForSlot[slotIdx]].position;
             else
             {
+                float spacing = 0.6f;
+                int mid = n / 2;
                 if (cam != null)
                 {
-                    float spacing = 0.6f;
-                    int mid = n / 2;
                     Vector3 right = cam.transform.right;
-                    Vector3 basePos = cam.transform.position + cam.transform.forward * 5f + Vector3.up * (centerLocalPositionOffset.y);
+                    Vector3 basePos = cam.transform.position + cam.transform.forward * 5f + Vector3.up * centerLocalPositionOffset.y;
                     finalWorld = basePos + right * ((slotIdx - mid) * spacing);
                 }
                 else
                 {
-                    float spacing = 0.6f;
-                    int mid = n / 2;
                     Vector3 right = weaponsParent.right;
-                    Vector3 basePos = weaponsParent.position + weaponsParent.forward * 5f + Vector3.up * (centerLocalPositionOffset.y);
+                    Vector3 basePos = weaponsParent.position + weaponsParent.forward * 5f + Vector3.up * centerLocalPositionOffset.y;
                     finalWorld = basePos + right * ((slotIdx - mid) * spacing);
                 }
             }
 
-            Vector3 dir = (aimPoint - finalWorld).normalized;
-            if (dir.sqrMagnitude < 0.0001f) dir = Vector3.forward;
-            Quaternion finalRot = Quaternion.LookRotation(dir, Vector3.up) * Quaternion.Euler(centerLocalEulerOffset);
+            Quaternion finalRot = Quaternion.LookRotation(uniformForward, Vector3.up) * Quaternion.Euler(centerLocalEulerOffset);
 
-            Vector3 wp = w.transform.position;
-            w.transform.position = new Vector3(finalWorld.x, finalWorld.y, finalWorld.z);
+            w.transform.position = finalWorld;
             w.transform.rotation = finalRot;
         }
 
-        // AUTO-FIRE using reflection
+        // auto-fire toward aimPoint but keep weapon models facing uniformForward
         float abilityStart = Time.time;
         while (Time.time < abilityStart + abilityDuration)
         {
@@ -556,14 +554,15 @@ public class ArmMount360 : MonoBehaviour
 
                 if (now - last >= interval)
                 {
-                    mi_FireInternal.Invoke(w, new object[] { Camera.main });
+                    // spawn projectiles toward aim point but do not rotate the visual beyond the uniform facing
+                    w.FireAtPoint(aimPoint);
                     fi_lastShotTime.SetValue(w, now);
                 }
             }
             yield return null;
         }
 
-        // restore original parents and local transforms (exact)
+        // restore original parents and local transforms exactly
         for (int i = 0; i < n; i++)
         {
             var state = slideStates[i];
@@ -581,7 +580,7 @@ public class ArmMount360 : MonoBehaviour
             w.transform.localRotation = state.originalLocalRot;
         }
 
-        // ensure parent rotation unchanged (we do not rotate parent during ability)
+        // do NOT rotate weaponsParent during ability
         ApplyCenterRotation(centerIndex);
         ApplyCenterPosition(centerIndex);
 
