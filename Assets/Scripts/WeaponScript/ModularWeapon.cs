@@ -23,27 +23,83 @@ public class ModularWeapon : MonoBehaviour
     public AudioSource audioSource;
     public AudioClip shootSound;
 
+    [Header("Recoil")]
+    [Tooltip("Vertical recoil applied per shot (degrees)")]
+    public float recoilAngle = 2f;
+    [Tooltip("Random variation applied to recoil (0 = no variation, 0.5 = ±50%)")]
+    [Range(0f, 1f)]
+    public float recoilRandomness = 0.2f;
+    [Tooltip("How quickly recoil settles back to neutral (higher = faster)")]
+    public float recoilReturnSpeed = 10f;
+    [Tooltip("Optional transform to apply recoil to. If null, will use `firePoint` when available, otherwise the weapon root.")]
+    public Transform recoilRoot;
+
     float lastShotTime = -999f;
     public bool IsCenter { get; private set; } = false;
 
     ArmMount360 parentMount = null;
     int parentSlotIndex = -1;
 
+    // Recoil state (local pitch applied on top of original local rotation)
+    Quaternion recoilOriginalLocalRotation;
+    float recoilTarget = 0f;
+    float recoilCurrent = 0f;
+
+    void Start()
+    {
+        CacheRecoilRootAndOriginal();
+    }
+
+    void OnEnable()
+    {
+        CacheRecoilRootAndOriginal();
+    }
+
+    void CacheRecoilRootAndOriginal()
+    {
+        // Prefer explicit recoilRoot, then firePoint (so aim visuals move), then the weapon root.
+        if (recoilRoot == null)
+            recoilRoot = (firePoint != null) ? firePoint : transform;
+
+        recoilOriginalLocalRotation = recoilRoot.localRotation;
+    }
+
+    void Update()
+    {
+        // Smoothly move current recoil toward target, and smoothly decay target toward zero.
+        recoilCurrent = Mathf.Lerp(recoilCurrent, recoilTarget, Time.deltaTime * recoilReturnSpeed * 1.5f);
+        recoilTarget = Mathf.Lerp(recoilTarget, 0f, Time.deltaTime * recoilReturnSpeed * 0.7f);
+
+        if (recoilRoot != null)
+        {
+            // Apply recoil as a local pitch (negative to kick the muzzle up)
+            recoilRoot.localRotation = recoilOriginalLocalRotation * Quaternion.Euler(-recoilCurrent, 0f, 0f);
+        }
+    }
+
     public void SetParentMount(ArmMount360 mount, int slotIndex)
     {
         parentMount = mount;
         parentSlotIndex = slotIndex;
+
+        // Parent/mount likely changed local rotations: refresh base rotation for recoil root.
+        CacheRecoilRootAndOriginal();
     }
 
     public void ClearParentMount()
     {
         parentMount = null;
         parentSlotIndex = -1;
+
+        CacheRecoilRootAndOriginal();
     }
 
     public void SetCenterState(bool isCenter)
     {
         IsCenter = isCenter;
+
+        // When weapon becomes/ceases center, its local transform may be changed by mount logic.
+        CacheRecoilRootAndOriginal();
     }
 
     public bool TryFire(ArmBattery battery, Camera playerCamera, float centerMultiplier = 1f)
@@ -72,6 +128,9 @@ public class ModularWeapon : MonoBehaviour
     {
         if (muzzleFlash) muzzleFlash.Play();
         if (audioSource && shootSound) audioSource.PlayOneShot(shootSound);
+
+        // apply recoil on firing
+        ApplyRecoil();
 
         Vector3 forwardDir = (firePoint != null) ? firePoint.forward : transform.forward;
 
@@ -121,6 +180,9 @@ public class ModularWeapon : MonoBehaviour
         if (muzzleFlash) muzzleFlash.Play();
         if (audioSource && shootSound) audioSource.PlayOneShot(shootSound);
 
+        // apply recoil on firing
+        ApplyRecoil();
+
         Vector3 forwardDir = (firePoint != null) ? (aimPoint - firePoint.position).normalized : (aimPoint - transform.position).normalized;
 
         for (int i = 0; i < pellets; i++)
@@ -139,6 +201,13 @@ public class ModularWeapon : MonoBehaviour
                 rb.linearVelocity = dir * speed;
             }
         }
+    }
+
+    void ApplyRecoil()
+    {
+        if (recoilAngle <= 0f) return;
+        float rand = Random.Range(1f - recoilRandomness, 1f + recoilRandomness);
+        recoilTarget += recoilAngle * rand;
     }
 
     Vector3 CalculateSpread(Vector3 forward)

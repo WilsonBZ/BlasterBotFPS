@@ -7,7 +7,7 @@ using UnityEngine;
 public class ArmMount360 : MonoBehaviour
 {
     [Header("Ring configuration")]
-    public int slotCount = 7;
+    public int slotCount = 5;
     public float radius = 1.0f;
     public bool autoGenerateSlots = true;
 
@@ -110,7 +110,7 @@ public class ArmMount360 : MonoBehaviour
         {
             float wheel = Input.GetAxis("Mouse ScrollWheel");
             if (wheel > 0.0001f) TryRotate(-1);
-            else if (wheel < -0.0001f) TryRotate(+1);
+            else if (wheel < -0.0001f) TryRotate(0);
         }
 
         if (abilityActive) return;
