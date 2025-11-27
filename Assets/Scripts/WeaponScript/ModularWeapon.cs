@@ -115,6 +115,31 @@ public class ModularWeapon : MonoBehaviour
         }
     }
 
+    // New method used by ability: spawn projectiles directly toward a world point (ignores battery)
+    public void FireAtPoint(Vector3 aimPoint)
+    {
+        if (muzzleFlash) muzzleFlash.Play();
+        if (audioSource && shootSound) audioSource.PlayOneShot(shootSound);
+
+        Vector3 forwardDir = (firePoint != null) ? (aimPoint - firePoint.position).normalized : (aimPoint - transform.position).normalized;
+
+        for (int i = 0; i < pellets; i++)
+        {
+            Vector3 dir = CalculateSpread(forwardDir);
+
+            if (projectilePrefab == null || firePoint == null) continue;
+
+            GameObject proj = Instantiate(projectilePrefab, firePoint.position, Quaternion.LookRotation(dir));
+            Rigidbody rb = proj.GetComponent<Rigidbody>();
+            var p = proj.GetComponent<Projectile>();
+            float speed = (p != null) ? p.Speed : 30f;
+
+            if (rb != null)
+            {
+                rb.linearVelocity = dir * speed;
+            }
+        }
+    }
 
     Vector3 CalculateSpread(Vector3 forward)
     {
