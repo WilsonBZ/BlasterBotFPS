@@ -655,7 +655,8 @@ PlayerSettings:
   webGLCloseOnQuit: 0
   webWasm2023: 0
   webEnableSubmoduleStrippingCompatibility: 0
-  scriptingDefineSymbols: {}
+  scriptingDefineSymbols:
+    Standalone: MOREMOUNTAINS_INTERFACE;MOREMOUNTAINS_INVENTORYENGINE
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:
