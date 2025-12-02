@@ -204,9 +204,6 @@ public class GunShopUI : MonoBehaviour
         else Debug.Log(text);
     }
 
-    /// <summary>
-    /// Closes the shop and restores cursor lock.
-    /// </summary>
     public void CloseShop()
     {
         // hide this UI

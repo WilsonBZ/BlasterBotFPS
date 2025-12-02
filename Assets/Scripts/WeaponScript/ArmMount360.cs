@@ -283,6 +283,7 @@ public class ArmMount360 : MonoBehaviour
             if (oldW != null) { oldW.transform.localPosition = Vector3.Lerp(oldStartPos, oldTargetPos, v); oldW.transform.localRotation = Quaternion.Slerp(oldStartRot, oldTargetRot, v); }
             if (newW != null) { newW.transform.localPosition = Vector3.Lerp(newStartPos, newTargetPos, v); newW.transform.localRotation = Quaternion.Slerp(newStartRot, newTargetRot, v); }
             yield return null;
+            
         }
 
         weaponsParent.localEulerAngles = new Vector3(0f, to, 0f);

@@ -13,6 +13,7 @@ public class Projectile : MonoBehaviour
     [SerializeField] private float collisionCheckRadius = 0.2f;
 
     [Header("Effects")]
+    [SerializeField] private GameObject spawnEffect;
     [SerializeField] private GameObject nonDamageEffect;
     [SerializeField] private GameObject impactEffect;
     [SerializeField] private TrailRenderer trail;
@@ -24,13 +25,16 @@ public class Projectile : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-        Destroy(gameObject, lifetime);
 
+        Destroy(gameObject, lifetime);
     }
 
     private void Start()
     {
         rb.linearVelocity = transform.forward * Speed;
+
+        // Spawn muzzle/launch VFX
+        SpawnEffect(spawnEffect, transform.position, transform.forward);
     }
 
     private void Update()
@@ -44,8 +48,7 @@ public class Projectile : MonoBehaviour
     private void FixedUpdate()
     {
         if (Physics.SphereCast(transform.position, collisionCheckRadius,
-                             transform.forward, out RaycastHit hit,
-                             Speed * Time.fixedDeltaTime))
+            transform.forward, out RaycastHit hit, Speed * Time.fixedDeltaTime))
         {
             HandleCollision(hit);
         }
@@ -54,6 +57,7 @@ public class Projectile : MonoBehaviour
     private void HandleCollision(RaycastHit hit)
     {
         IDamageable damageable = hit.collider.GetComponent<IDamageable>();
+
         if (damageable != null)
         {
             damageable.TakeDamage(damage);
@@ -63,13 +67,17 @@ public class Projectile : MonoBehaviour
         {
             SpawnEffect(nonDamageEffect, hit.point, hit.normal);
         }
+
+        StartCoroutine(DestroyTrail());
         Destroy(gameObject);
     }
+
     private void OnCollisionEnter(Collision collision)
     {
         StartCoroutine(HitStop());
 
         IDamageable damageable = collision.gameObject.GetComponent<IDamageable>();
+
         if (damageable != null)
         {
             damageable.TakeDamage(damage);
@@ -77,12 +85,10 @@ public class Projectile : MonoBehaviour
         }
         else
         {
-            // Regular surface impact
             SpawnEffect(nonDamageEffect, collision.contacts[0].point, collision.contacts[0].normal);
         }
 
-
-        SpawnEffect(impactEffect, collision.contacts[0].point, collision.contacts[0].normal);
+        StartCoroutine(DestroyTrail());
         Destroy(gameObject);
     }
 
@@ -100,9 +106,30 @@ public class Projectile : MonoBehaviour
         if (this && rb) rb.linearVelocity = transform.forward * Speed;
     }
 
+    private IEnumerator DestroyTrail()
+    {
+        if (trail != null)
+        {
+            trail.transform.SetParent(null);
+            Destroy(trail.gameObject, trail.time);
+        }
+        yield return null;
+    }
+
     private void SpawnEffect(GameObject effect, Vector3 position, Vector3 normal)
     {
         if (!effect) return;
-        Instantiate(effect, position, Quaternion.LookRotation(normal));
+
+        GameObject vfx = Instantiate(effect, position, Quaternion.LookRotation(normal));
+
+        ParticleSystem ps = vfx.GetComponent<ParticleSystem>();
+        if (ps != null)
+        {
+            Destroy(vfx, ps.main.duration + ps.main.startLifetime.constantMax);
+        }
+        else
+        {
+            Destroy(vfx, 2f);
+        }
     }
 }

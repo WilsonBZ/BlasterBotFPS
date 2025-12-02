@@ -1,3 +1,4 @@
+using MoreMountains.Feedbacks;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
@@ -19,7 +20,7 @@ public class ModularWeapon : MonoBehaviour
     public bool useCrosshairWhenCentered = true;
 
     [Header("Effects")]
-    public ParticleSystem muzzleFlash;
+    public MMF_Player muzzleFlash;
     public AudioSource audioSource;
     public AudioClip shootSound;
 
@@ -126,10 +127,9 @@ public class ModularWeapon : MonoBehaviour
 
     protected virtual void FireInternal(Camera playerCamera)
     {
-        if (muzzleFlash) muzzleFlash.Play();
+        muzzleFlash.PlayFeedbacks();
         if (audioSource && shootSound) audioSource.PlayOneShot(shootSound);
 
-        // apply recoil on firing
         ApplyRecoil();
 
         Vector3 forwardDir = (firePoint != null) ? firePoint.forward : transform.forward;
@@ -177,7 +177,7 @@ public class ModularWeapon : MonoBehaviour
     // New method used by ability: spawn projectiles directly toward a world point (ignores battery)
     public void FireAtPoint(Vector3 aimPoint)
     {
-        if (muzzleFlash) muzzleFlash.Play();
+        muzzleFlash.PlayFeedbacks();
         if (audioSource && shootSound) audioSource.PlayOneShot(shootSound);
 
         // apply recoil on firing
