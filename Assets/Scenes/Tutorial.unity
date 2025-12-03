@@ -422,6 +422,7 @@ GameObject:
   m_Component:
   - component: {fileID: 217978688}
   - component: {fileID: 217978687}
+  - component: {fileID: 217978689}
   m_Layer: 0
   m_Name: Directional Light
   m_TagString: Untagged
@@ -509,6 +510,29 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 97.02301, y: -30, z: 0}
+--- !u!114 &217978689
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 217978686}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Version: 3
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_LightLayerMask: 1
+  m_RenderingLayers: 1
+  m_CustomShadowLayers: 0
+  m_ShadowLayerMask: 1
+  m_ShadowRenderingLayers: 1
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
 --- !u!1 &225786700 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5462243980451001932, guid: 03ea5277411f6464490d37f9aaaaa181, type: 3}
@@ -649,7 +673,7 @@ MonoBehaviour:
   openDistance: 4
   doorSpeed: 4
   player: {fileID: 1352525822}
-  waveSpawner: {fileID: 0}
+  waveSpawner: {fileID: 1726558418}
   triggerOnOpen: 1
   triggerOnce: 1
 --- !u!1001 &325839744
@@ -1235,6 +1259,55 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 9c17ccc851957a0429c15f4c0ab990c9, type: 3}
   m_PrefabInstance: {fileID: 1533806950}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1010392427
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1010392429}
+  - component: {fileID: 1010392428}
+  m_Layer: 0
+  m_Name: GameObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1010392428
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1010392427}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63b43a31843f9394ea59d2ceb85ebf5a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  panel: {fileID: 0}
+  healButton: {fileID: 0}
+  pelletsButton: {fileID: 0}
+  spreadButton: {fileID: 0}
+  toggleKey: 104
+--- !u!4 &1010392429
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1010392427}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 61.82701, y: 0, z: -63.76959}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1080335605
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1694,9 +1767,13 @@ MonoBehaviour:
   explosionEffect: {fileID: 0}
   explosionForce: 10
   selfDestructDelay: 0.5
+  hitSlowMultiplier: 0.5
+  hitSlowDuration: 0.8
+  hitSlowRestoreSmoothTime: 0.15
   animator: {fileID: 1342184498}
   defaultKnockbackRecovery: 0.6
   maxAllowedKnockbackSpeed: 15
+  WeaponSockets: []
 --- !u!195 &1342184497
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -2404,7 +2481,7 @@ MonoBehaviour:
   indicatorDelay: 1
   groundMask:
     serializedVersion: 2
-    m_Bits: 64
+    m_Bits: 4294967295
   autoStartForTest: 0
 --- !u!4 &1726558419
 Transform:
@@ -3422,7 +3499,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: 6fcfd7467f101784d8a960a5a11bbae2, type: 2}
     - target: {fileID: 2085579541886419195, guid: 073624ee654f29e44802cef2e1ab22cb, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: -0.2
       objectReference: {fileID: 0}
     - target: {fileID: 2085579541886419195, guid: 073624ee654f29e44802cef2e1ab22cb, type: 3}
       propertyPath: m_LocalPosition.y
@@ -3430,7 +3507,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2085579541886419195, guid: 073624ee654f29e44802cef2e1ab22cb, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: 2.5
       objectReference: {fileID: 0}
     - target: {fileID: 2085579541886419195, guid: 073624ee654f29e44802cef2e1ab22cb, type: 3}
       propertyPath: m_LocalRotation.w
@@ -3759,3 +3836,4 @@ SceneRoots:
   - {fileID: 292054189}
   - {fileID: 1463544715}
   - {fileID: 1726558419}
+  - {fileID: 1010392429}
