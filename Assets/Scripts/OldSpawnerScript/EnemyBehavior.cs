@@ -1,10 +1,10 @@
 using System.Collections;
+using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
-using UnityEngine.AI;
 using UnityEngine.UI;
 
-
-[RequireComponent(typeof(NavMeshAgent), typeof(Animator))]
+[RequireComponent(typeof(Rigidbody), typeof(Animator))]
 public class Enemy : BaseEnemy, IDamageable
 {
     [Header("Core Settings")]
@@ -12,7 +12,6 @@ public class Enemy : BaseEnemy, IDamageable
     [SerializeField] private Vector3 groundCheckOffset = new Vector3(0, -0.9f, 0);
     [SerializeField] private LayerMask groundMask;
     [SerializeField] private float groundCheckRadius = 0.4f;
-    //[SerializeField] private EnemyState initialState = EnemyState.Idle;
 
     [Header("Health Settings")]
     [SerializeField] private GameObject healthBarPrefab;
@@ -38,13 +37,18 @@ public class Enemy : BaseEnemy, IDamageable
     [SerializeField] private float explosionForce = 10f;
     [SerializeField] private float selfDestructDelay = 0.5f;
 
-    //private TextMeshProUGUI damageNumberGUI;
+    [Header("Hit Slowdown")]
+    [Tooltip("Multiplier applied to move speed when hit (0.5 = 50% speed)")]
+    [SerializeField] private float hitSlowMultiplier = 0.5f;
+    [Tooltip("How long the slowdown lasts (seconds)")]
+    [SerializeField] private float hitSlowDuration = 0.8f;
+    [Tooltip("Optional smooth restore time after slowdown ends")]
+    [SerializeField] private float hitSlowRestoreSmoothTime = 0.15f;
+
     private Slider healthSlider;
     private GameObject healthBarInstance;
     private float currentHealth;
 
-    //public event Action OnDeath;
-    private NavMeshAgent agent;
     [SerializeField] private Animator animator;
     private PlayerManager player;
 
@@ -61,32 +65,39 @@ public class Enemy : BaseEnemy, IDamageable
     private bool isKnockedBack = false;
     private bool isGrounded;
 
-    // New config-like fields (serialized so you can tweak per enemy in Inspector)
     [Header("Knockback / Stun")]
-    [SerializeField] private float defaultKnockbackRecovery = 0.6f; // fallback if caller doesn't pass
-    [SerializeField] private float maxAllowedKnockbackSpeed = 15f; // clamp for safety
+    [SerializeField] private float defaultKnockbackRecovery = 0.6f;
+    [SerializeField] private float maxAllowedKnockbackSpeed = 15f;
 
-    // In Awake(), grab or add Rigidbody and set default state
+    private MethodInfo mi_FireInternal;
+    private FieldInfo fi_lastShotTime;
+
+    public List<GameObject> WeaponSockets;
+
+    // runtime movement override (used to apply temporary slowdowns)
+    private float originalMoveSpeed;
+    private float runtimeMoveSpeed;
+    private Coroutine slowCoroutine;
+
     private void Awake()
     {
-        agent = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
         player = FindFirstObjectByType<PlayerManager>();
 
-        // ensure Rigidbody exists and is initially kinematic (so NavMeshAgent controls movement)
         rb = GetComponent<Rigidbody>();
-        if (rb == null)
-        {
-            rb = gameObject.AddComponent<Rigidbody>();
-            rb.interpolation = RigidbodyInterpolation.Interpolate;
-            rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
-        }
-
-        // keep physics off while agent runs
-        rb.isKinematic = true;
+        if (rb == null) rb = gameObject.AddComponent<Rigidbody>();
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
+        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+        rb.freezeRotation = true;
+        rb.isKinematic = false; // physics-driven; we'll control movement via MovePosition
 
         InitializeFromConfig();
+
+        var mwType = typeof(ModularWeapon);
+        mi_FireInternal = mwType.GetMethod("FireInternal", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+        fi_lastShotTime = mwType.GetField("lastShotTime", BindingFlags.Instance | BindingFlags.NonPublic);
     }
+
     private void Start()
     {
         currentHealth = config.maxHealth;
@@ -97,6 +108,8 @@ public class Enemy : BaseEnemy, IDamageable
     {
         if (isExploded) return;
 
+        isGrounded = Physics.CheckSphere(transform.position + groundCheckOffset, groundCheckRadius, groundMask);
+
         if (config.canExplode && Vector3.Distance(transform.position, player.transform.position) <= config.explosionRange)
         {
             StartCoroutine(Explode());
@@ -105,11 +118,24 @@ public class Enemy : BaseEnemy, IDamageable
 
         UpdateStateMachine();
         UpdateAnimations();
+    }
 
-        isGrounded = Physics.CheckSphere(
-        transform.position + groundCheckOffset,
-        groundCheckRadius,
-        groundMask);
+    private void FixedUpdate()
+    {
+        // physics-based movement: only applied during Chase when not knocked back or attacking
+        if (isExploded || isKnockedBack) return;
+
+        if (currentState == EnemyState.Chase)
+        {
+            Vector3 toPlayer = player.transform.position - transform.position;
+            Vector3 dir = new Vector3(toPlayer.x, 0f, toPlayer.z).normalized;
+            if (dir.sqrMagnitude > 0.001f && isGrounded)
+            {
+                float moveStep = runtimeMoveSpeed * Time.fixedDeltaTime;
+                Vector3 target = rb.position + dir * moveStep;
+                rb.MovePosition(target);
+            }
+        }
     }
 
     private void CreateHealthBar()
@@ -117,27 +143,22 @@ public class Enemy : BaseEnemy, IDamageable
         if (healthBarPrefab == null) return;
 
         healthBarInstance = Instantiate(healthBarPrefab, transform.position + healthBarOffset, Quaternion.identity);
-        healthBarInstance.transform.SetParent(transform); 
+        healthBarInstance.transform.SetParent(transform);
         healthSlider = healthBarInstance.GetComponentInChildren<Slider>();
         UpdateHealthBar();
     }
 
     private void UpdateHealthBar()
     {
-        if (healthSlider != null)
-        {
-            healthSlider.value = currentHealth / config.maxHealth;
-        }
+        if (healthSlider != null) healthSlider.value = currentHealth / config.maxHealth;
     }
 
     private void InitializeFromConfig()
     {
         currentHealth = config.maxHealth;
-        agent.speed = config.moveSpeed;
-        agent.acceleration = config.acceleration;
-
-        agent.stoppingDistance = config.attackRange * 0.9f;
-
+        originalMoveSpeed = config.moveSpeed;
+        runtimeMoveSpeed = originalMoveSpeed;
+        // movement properties are used in FixedUpdate
     }
 
     private void UpdateStateMachine()
@@ -160,7 +181,7 @@ public class Enemy : BaseEnemy, IDamageable
                 break;
         }
 
-        if (currentState != EnemyState.Dead)
+        if (currentState != EnemyState.Dead && !isKnockedBack)
         {
             Vector3 dir = (player.transform.position - transform.position).normalized;
             if (dir != Vector3.zero)
@@ -173,12 +194,25 @@ public class Enemy : BaseEnemy, IDamageable
 
     private void UpdateAnimations()
     {
-        //animator.SetFloat("MoveSpeed", agent.velocity.magnitude / agent.speed);
+        // Use Rigidbody.linearVelocity instead of obsolete velocity where available
+        Vector3 horizontalVel = Vector3.zero;
+        if (rb != null)
+        {
+#if UNITY_2023_1_OR_NEWER
+            horizontalVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+#else
+            // Fallback if older Unity version doesn't have linearVelocity
+            horizontalVel = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
+#endif
+        }
+
+        float speed = horizontalVel.magnitude;
+        animator.SetFloat(animMoveSpeed, speed / Mathf.Max(0.0001f, runtimeMoveSpeed)); 
     }
 
     private void HandleIdleState(float distanceToPlayer)
     {
-        if (distanceToPlayer <= config.detectionRange)
+        if (distanceToPlayer <= config.detectionRange && HasLineOfSightToPlayer())
         {
             TransitionToState(EnemyState.Chase);
         }
@@ -188,13 +222,14 @@ public class Enemy : BaseEnemy, IDamageable
     {
         if (distanceToPlayer <= config.attackRange)
         {
-            agent.ResetPath(); 
             TransitionToState(EnemyState.Attack);
             return;
         }
-        if (isGrounded == true)
+
+        // if we lost sight and exceeded chaseRange, return to Idle
+        if (distanceToPlayer > config.chaseRange || !HasLineOfSightToPlayer())
         {
-            agent.SetDestination(player.transform.position);
+            TransitionToState(EnemyState.Idle);
         }
     }
 
@@ -213,24 +248,12 @@ public class Enemy : BaseEnemy, IDamageable
         }
     }
 
-    private void HandleDeadState()
-    {
-
-    }
+    private void HandleDeadState() { }
 
     private void TransitionToState(EnemyState newState)
     {
         currentState = newState;
-
-
-        if (isGrounded == true && newState == EnemyState.Attack)
-        {
-            agent.isStopped = true;
-        }
-        else if (isGrounded == true && currentState == EnemyState.Chase)
-        {
-            agent.isStopped = false;
-        }
+        // no NavMeshAgent to stop; movement handled in FixedUpdate
     }
 
     public void TakeDamage(float damage)
@@ -238,7 +261,6 @@ public class Enemy : BaseEnemy, IDamageable
         if (isExploded) return;
 
         currentHealth -= damage;
-        //animator.SetTrigger(animTakeDamage);
         UpdateHealthBar();
 
         if (currentHealth <= 0)
@@ -254,50 +276,31 @@ public class Enemy : BaseEnemy, IDamageable
         }
 
         ShowDamageNumber(damage);
+
+        // apply temporary slowdown when hit
+        StartHitSlowdown();
     }
 
-    public void ApplyKnockback(Vector3 impulse, float damage = 0f, float stunDuration = -1f)
+    private void StartHitSlowdown()
     {
-        if (isExploded) return; // don't knockback exploded enemies
+        if (hitSlowMultiplier >= 1f || hitSlowDuration <= 0f) return;
 
-        if (stunDuration <= 0f) stunDuration = defaultKnockbackRecovery;
-
-        // clamp impulse to avoid insane velocities
-        if (impulse.magnitude > maxAllowedKnockbackSpeed)
+        // restart coroutine if already running so duration is refreshed
+        if (slowCoroutine != null)
         {
-            impulse = impulse.normalized * maxAllowedKnockbackSpeed;
-        }
-    
-        if (damage > 0f)
-        {
-            TakeDamage(damage);
+            StopCoroutine(slowCoroutine);
+            slowCoroutine = null;
         }
 
-        // start knockback routine
-        StartCoroutine(KnockbackCoroutine(impulse, stunDuration));
+        slowCoroutine = StartCoroutine(SlowdownCoroutine(hitSlowMultiplier, hitSlowDuration, hitSlowRestoreSmoothTime));
     }
 
-    private IEnumerator KnockbackCoroutine(Vector3 impulse, float duration)
+    private IEnumerator SlowdownCoroutine(float multiplier, float duration, float smoothRestoreTime)
     {
-        if (isKnockedBack) yield break; // already knocked
-        isKnockedBack = true;
+        // apply immediate slow
+        runtimeMoveSpeed = originalMoveSpeed * Mathf.Clamp(multiplier, 0f, 1f);
 
-        // Stop agent and let physics take over
-        if (agent) agent.isStopped = true;
-        if (agent) agent.enabled = false;
-
-        // enable physics
-        if (rb)
-        {
-            rb.isKinematic = false;
-            rb.linearVelocity = Vector3.zero; // reset existing nav velocity
-            rb.AddForce(impulse, ForceMode.Impulse);
-        }
-
-        // optional: play hit/knockback animation
-        // animator?.SetTrigger(animTakeDamage);
-
-        // Wait for duration or until grounded (you can extend to wait until velocity small)
+        // wait for slowdown duration
         float elapsed = 0f;
         while (elapsed < duration)
         {
@@ -305,51 +308,74 @@ public class Enemy : BaseEnemy, IDamageable
             yield return null;
         }
 
-        // Stop physics motion
-        if (rb)
+        // smooth restore to original speed
+        if (smoothRestoreTime > 0f)
         {
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
+            float startSpeed = runtimeMoveSpeed;
+            float t = 0f;
+            while (t < smoothRestoreTime)
+            {
+                t += Time.deltaTime;
+                runtimeMoveSpeed = Mathf.Lerp(startSpeed, originalMoveSpeed, Mathf.Clamp01(t / smoothRestoreTime));
+                yield return null;
+            }
         }
 
-        // Re-enable agent and warp to current position so NavMesh can continue
-        Vector3 pos = transform.position;
-        if (agent)
+        runtimeMoveSpeed = originalMoveSpeed;
+        slowCoroutine = null;
+    }
+
+    public void ApplyKnockback(Vector3 impulse, float damage = 0f, float stunDuration = -1f)
+    {
+        if (isExploded) return;
+
+        if (stunDuration <= 0f) stunDuration = defaultKnockbackRecovery;
+
+        if (impulse.magnitude > maxAllowedKnockbackSpeed)
+            impulse = impulse.normalized * maxAllowedKnockbackSpeed;
+
+        if (damage > 0f) TakeDamage(damage);
+
+        StartCoroutine(KnockbackCoroutine(impulse, stunDuration));
+    }
+
+    private IEnumerator KnockbackCoroutine(Vector3 impulse, float duration)
+    {
+        if (isKnockedBack) yield break;
+        isKnockedBack = true;
+
+        rb.isKinematic = false;
+#if UNITY_2023_1_OR_NEWER
+        rb.linearVelocity = Vector3.zero;
+#else
+        // Fallback for older Unity versions
+        rb.velocity = Vector3.zero;
+#endif
+        rb.AddForce(impulse, ForceMode.Impulse);
+
+        float elapsed = 0f;
+        while (elapsed < duration)
         {
-            agent.enabled = true;
-            // Small safe warp: try sample navmesh to prevent teleports off-navmesh
-            NavMeshHit hit;
-            if (NavMesh.SamplePosition(pos, out hit, 1.0f, NavMesh.AllAreas))
-            {
-                agent.Warp(hit.position);
-            }
-            else
-            {
-                agent.Warp(pos);
-            }
-            agent.isStopped = false;
+            elapsed += Time.deltaTime;
+            yield return null;
         }
 
-        // turn physics back off to let NavMeshAgent control movement
-        if (rb)
-        {
-            rb.isKinematic = true;
-        }
+#if UNITY_2023_1_OR_NEWER
+        rb.linearVelocity = Vector3.zero;
+#else
+        rb.velocity = Vector3.zero;
+#endif
+        rb.angularVelocity = Vector3.zero;
+        rb.isKinematic = false; // keep non-kinematic to allow MovePosition; MovePosition works with non-kinematic if interpolation enabled
 
         isKnockedBack = false;
 
-        // Optionally resume previous state
-        if (!isExploded)
-        {
-            TransitionToState(EnemyState.Chase);
-        }
+        if (!isExploded) TransitionToState(EnemyState.Chase);
     }
-
 
     private void Attack()
     {
-        //animator.SetTrigger(animAttack);
-
+        animator.SetTrigger(animAttack);
     }
 
     public void OnAttackFrame()
@@ -368,37 +394,26 @@ public class Enemy : BaseEnemy, IDamageable
     {
         isExploded = true;
         if (healthBarInstance) healthBarInstance.SetActive(false);
-        if (agent) agent.enabled = false;
 
-        // call base death handler to notify listeners
         HandleDeath();
 
-        //animator.SetTrigger(animDie);
-        agent.enabled = false;
+        animator.SetTrigger(animDie);
 
-        foreach (var collider in GetComponents<Collider>())
-        {
-            collider.enabled = false;
-        }
+        foreach (var collider in GetComponents<Collider>()) collider.enabled = false;
 
         if (deathEffect) Instantiate(deathEffect, transform.position, Quaternion.identity);
         Destroy(gameObject, config.deathCleanupTime);
     }
 
-
     private IEnumerator Explode()
     {
+        if (isExploded) yield break;
         isExploded = true;
-        agent.isStopped = true;
-        //animator.SetTrigger(animDie);
+        animator.SetTrigger(animDie);
 
         yield return new WaitForSeconds(selfDestructDelay);
 
-        if (explosionEffect)
-        {
-            Instantiate(explosionEffect, transform.position, Quaternion.identity);
-        }
-
+        if (explosionEffect) Instantiate(explosionEffect, transform.position, Quaternion.identity);
 
         Collider[] hits = Physics.OverlapSphere(transform.position, explosionRange);
         foreach (var hit in hits)
@@ -409,40 +424,41 @@ public class Enemy : BaseEnemy, IDamageable
                 float damageMultiplier = 1 - Mathf.Clamp01(distance / explosionRange);
                 damageable.TakeDamage(explosionDamage * damageMultiplier);
 
-                Rigidbody rb = hit.GetComponent<Rigidbody>();
-                if (rb)
-                {
-                    Vector3 direction = (hit.transform.position - transform.position).normalized;
-                    rb.AddForce(direction * explosionForce, ForceMode.Impulse);
-                }
+                Rigidbody rbHit = hit.GetComponent<Rigidbody>();
+                if (rbHit) rbHit.AddForce((hit.transform.position - transform.position).normalized * explosionForce, ForceMode.Impulse);
             }
         }
+
         HandleDeath();
         Die();
-   }
+    }
 
     private IEnumerator FleeBehavior()
     {
         Vector3 fleeDirection = (transform.position - player.transform.position).normalized;
         Vector3 fleePosition = transform.position + fleeDirection * config.fleeDistance;
 
-        NavMeshHit hit;
-        if (NavMesh.SamplePosition(fleePosition, out hit, config.fleeDistance, NavMesh.AllAreas))
+        Vector3 dir = (fleePosition - transform.position).normalized;
+        float elapsed = 0f;
+        float fleeTime = config.fleeDuration;
+        while (elapsed < fleeTime)
         {
-            agent.SetDestination(hit.position);
-            yield return new WaitForSeconds(config.fleeDuration);
-
-            if (!isExploded) TransitionToState(EnemyState.Chase);
+            elapsed += Time.deltaTime;
+            if (isGrounded)
+            {
+                rb.MovePosition(rb.position + dir * runtimeMoveSpeed * Time.deltaTime);
+            }
+            yield return null;
         }
 
-
+        if (!isExploded) TransitionToState(EnemyState.Chase);
     }
 
     private void ShowDamageNumber(float damage)
     {
         if (damageNumberPrefab == null) return;
 
-        Vector3 spawnPos = transform.position + numberOffset + UnityEngine.Random.insideUnitSphere * 0.3f;
+        Vector3 spawnPos = transform.position + numberOffset + Random.insideUnitSphere * 0.3f;
         GameObject number = Instantiate(damageNumberPrefab, spawnPos, Quaternion.identity);
 
         number.transform.LookAt(Camera.main.transform);
@@ -463,18 +479,34 @@ public class Enemy : BaseEnemy, IDamageable
 
     private void OnDrawGizmosSelected()
     {
-        // Visualization
         Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, config.detectionRange);
+        Gizmos.DrawWireSphere(transform.position, config != null ? config.detectionRange : 1f);
 
         Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, config.chaseRange);
+        Gizmos.DrawWireSphere(transform.position, config != null ? config.chaseRange : 1f);
 
         if (attackPoint)
         {
             Gizmos.color = Color.magenta;
-            Gizmos.DrawWireSphere(attackPoint.position, config.attackRadius);
+            Gizmos.DrawWireSphere(attackPoint.position, config != null ? config.attackRadius : 1f);
         }
+    }
+
+    private bool HasLineOfSightToPlayer()
+    {
+        var camTarget = player.transform;
+        Vector3 origin = transform.position + Vector3.up * 0.5f;
+        Vector3 dir = (camTarget.position - origin).normalized;
+        if (Physics.Raycast(origin, dir, out var hit, config.chaseRange))
+        {
+            // if the ray hits the player (or child) consider that LOS; otherwise blocked
+            if (hit.collider != null)
+            {
+                if (hit.collider.transform.root == player.transform.root || hit.collider.GetComponent<PlayerManager>() != null) return true;
+            }
+            return false;
+        }
+        return false;
     }
 }
 
@@ -494,7 +526,6 @@ public class EnemyConfig : ScriptableObject
     public float preferredDistance = 10f;
     public float fireCooldown = 1.5f;
     public GameObject projectilePrefab;
-
 
     [Header("Explosion Settings")]
     public bool canExplode = true;

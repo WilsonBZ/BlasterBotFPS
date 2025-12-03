@@ -41,7 +41,7 @@ public class PlayerManager : MonoBehaviour, IDamageable
         OnHealthChanged?.Invoke(currentHealth / maxHealth);
         //AudioSource.PlayClipAtPoint(damageSound, transform.position);
 
-        StartCoroutine(DamageFlash());
+        //StartCoroutine(DamageFlash());
 
         OnHealthChanged?.Invoke(currentHealth / maxHealth);
 
@@ -52,17 +52,17 @@ public class PlayerManager : MonoBehaviour, IDamageable
 
     }
 
-    private IEnumerator DamageFlash()
-    {
-        var renderer = GetComponentInChildren<Renderer>();
-        if (renderer)
-        {
-            Color original = renderer.material.color;
-            renderer.material.color = Color.red;
-            yield return new WaitForSeconds(0.1f);
-            renderer.material.color = original;
-        }
-    }
+    //private IEnumerator DamageFlash()
+    //{
+    //    var renderer = GetComponentInChildren<Renderer>();
+    //    if (renderer)
+    //    {
+    //        Color original = renderer.material.color;
+    //        renderer.material.color = Color.red;
+    //        yield return new WaitForSeconds(0.1f);
+    //        renderer.material.color = original;
+    //    }
+    //}
 
     public float GetHealthPercent()
     {

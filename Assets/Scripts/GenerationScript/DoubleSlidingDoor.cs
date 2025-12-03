@@ -14,26 +14,48 @@ public class SlidingDoubleDoor : MonoBehaviour
     private Vector3 rightClosedPos;
 
     [Header("Settings")]
-    public float openDistance = 4f;       // How close player must be
-    public float doorSpeed = 4f;          // Slide speed
-    public Transform player;              // Player transform
+    public float openDistance = 4f;
+    public float doorSpeed = 4f;
+    public Transform player;
 
     private bool isOpen = false;
+
+    [Header("Wave Spawner Trigger")]
+    public WaveSpawner waveSpawner;
+    public bool triggerOnOpen = true;
+    public bool triggerOnce = true;
+
+    private bool prevIsOpen = false;
+    private bool hasTriggered = false;
 
     void Start()
     {
         leftClosedPos = leftDoor.localPosition;
         rightClosedPos = rightDoor.localPosition;
+        prevIsOpen = isOpen;
     }
 
     void Update()
     {
+        if (player == null) return;
+
         float dist = Vector3.Distance(player.position, transform.position);
 
         if (dist < openDistance)
             isOpen = true;
         else
             isOpen = false;
+
+        if (isOpen && !prevIsOpen)
+        {
+            if (triggerOnOpen && waveSpawner != null && (!triggerOnce || !hasTriggered))
+            {
+                waveSpawner.StartWaves();
+                hasTriggered = true;
+            }
+        }
+
+        prevIsOpen = isOpen;
 
         MoveDoors();
     }
