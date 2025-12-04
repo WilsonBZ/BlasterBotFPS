@@ -58,7 +58,7 @@ public class MouseMovement : MonoBehaviour
 
             //Handle rotation, and limit
             xRotation -= mouseY;
-            xRotation = Mathf.Clamp(xRotation, -90f, 90f);
+            xRotation = Mathf.Clamp(xRotation, -89f, 89f);
             cameraTransform.localRotation = Quaternion.Euler(xRotation, 0f, currentTilt);
 
             playerBody.Rotate(Vector3.up * mouseX);
