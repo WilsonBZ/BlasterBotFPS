@@ -16,6 +16,12 @@ public class WaveSpawner : MonoBehaviour
         public float spawnInterval = 0.5f;
     }
 
+    public enum SpawnShape
+    {
+        Circle,
+        Rectangle
+    }
+
     [Header("Wave Settings")]
     [Tooltip("Define waves (counts and per-wave spawn interval)")]
     public List<Wave> waves = new List<Wave>() { new Wave { enemyCount = 5, spawnInterval = 0.6f } };
@@ -25,11 +31,19 @@ public class WaveSpawner : MonoBehaviour
     public GameObject[] spawnPrefabs;
 
     [Header("Spawn Area (local to this GameObject)")]
-    [Tooltip("Radius within which enemies will randomly spawn (XZ plane).")]
+    public SpawnShape spawnShape = SpawnShape.Circle;
+
+    [Tooltip("Used when SpawnShape is Circle: radius within which enemies will randomly spawn (XZ plane).")]
     public float spawnRadius = 6f;
 
-    [Tooltip("Min distance from the center where enemies will not spawn (optional).")]
+    [Tooltip("Used when SpawnShape is Circle: min distance from the center where enemies will not spawn (optional).")]
     public float innerRadius = 1.0f;
+
+    [Tooltip("Used when SpawnShape is Rectangle: overall width (X) and depth (Z) of the spawn rectangle.")]
+    public Vector2 rectangleSize = new Vector2(12f, 8f);
+
+    [Tooltip("Used when SpawnShape is Rectangle: optional inner rectangular exclusion area (set to zero to disable).")]
+    public Vector2 innerRectangleSize = Vector2.zero;
 
     [Header("Spawn Indicator")]
     [Tooltip("Optional indicator prefab shown at spawn location for indicatorDelay seconds.")]
@@ -37,19 +51,14 @@ public class WaveSpawner : MonoBehaviour
     [Tooltip("How long the indicator shows before the enemy spawns (seconds).")]
     public float indicatorDelay = 1.0f;
 
-    [Header("NavMesh & safety")]
-    [Tooltip("Max attempts to find a valid NavMesh sample position for spawn.")]
-    public int navSampleAttempts = 8;
-    [Tooltip("Max distance used when sampling NavMesh for spawn (meters).")]
-    public float navSampleMaxDistance = 2f;
-    [Tooltip("Layer mask to ignore when raycasting indicator -> ground (optional).")]
+    [Header("Ground / safety")]
+    [Tooltip("Layer mask to use when raycasting indicator -> ground (optional).")]
     public LayerMask groundMask = ~0;
 
     [Header("Debug / Utilities")]
     [Tooltip("Auto-start waves on Awake (for testing).")]
     public bool autoStartForTest = false;
 
-    // runtime
     private int currentWaveIndex = -1;
     private int aliveEnemies = 0;
     private Coroutine runCoroutine;
@@ -109,13 +118,7 @@ public class WaveSpawner : MonoBehaviour
             while (spawned < toSpawn)
             {
                 Vector3 spawnPos;
-                bool found = TryGetRandomSpawnPosition(out spawnPos);
-                if (!found)
-                {
-                    // fallback to spawner position
-                    spawnPos = transform.position + UnityEngine.Random.onUnitSphere * innerRadius;
-                    spawnPos.y = transform.position.y;
-                }
+                TryGetRandomSpawnPosition(out spawnPos);
 
                 // show indicator (if any)
                 if (spawnIndicatorPrefab != null && indicatorDelay > 0f)
@@ -153,7 +156,7 @@ public class WaveSpawner : MonoBehaviour
                 else
                     yield return null;
             }
-
+    
             // wait until all spawned enemies die
             // if aliveEnemies is 0 immediately this will pass
             while (aliveEnemies > 0)
@@ -188,27 +191,47 @@ public class WaveSpawner : MonoBehaviour
     /// </summary>
     public bool TryGetRandomSpawnPosition(out Vector3 position)
     {
-        // sample point within donut (innerRadius..spawnRadius)
-        for (int i = 0; i < navSampleAttempts; i++)
+        Vector3 worldCandidate = transform.position;
+
+        if (spawnShape == SpawnShape.Circle)
         {
-            // uniform ring sampling by choosing angle and radius sqrt-based
+            // sample point within donut (innerRadius..spawnRadius)
             float angle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
             float r = Mathf.Sqrt(UnityEngine.Random.value) * (spawnRadius - innerRadius) + innerRadius;
             Vector3 offset = new Vector3(Mathf.Sin(angle) * r, 0f, Mathf.Cos(angle) * r);
-            Vector3 worldCandidate = transform.position + offset;
-
-            // sample navmesh near candidate
-            UnityEngine.AI.NavMeshHit hit;
-            if (UnityEngine.AI.NavMesh.SamplePosition(worldCandidate, out hit, navSampleMaxDistance, UnityEngine.AI.NavMesh.AllAreas))
+            worldCandidate = transform.position + offset;
+        }
+        else // Rectangle
+        {
+            int attempts = 0;
+            const int maxAttempts = 32;
+            Vector2 half = rectangleSize * 0.5f;
+            Vector2 innerHalf = innerRectangleSize * 0.5f;
+            while (attempts++ < maxAttempts)
             {
-                position = hit.position;
-                return true;
+                float rx = UnityEngine.Random.Range(-half.x, half.x);
+                float rz = UnityEngine.Random.Range(-half.y, half.y);
+                // if inner rectangle defined, enforce outside inner rectangle
+                if (innerRectangleSize.sqrMagnitude > 0f)
+                {
+                    if (Mathf.Abs(rx) < innerHalf.x && Mathf.Abs(rz) < innerHalf.y)
+                        continue;
+                }
+                worldCandidate = transform.position + new Vector3(rx, 0f, rz);
+                break;
             }
         }
 
-        // fallback - try random point on a circle surface (no nav sampling)
-        position = transform.position + new Vector3(UnityEngine.Random.insideUnitCircle.x * spawnRadius, 0f, UnityEngine.Random.insideUnitCircle.y * spawnRadius);
-        return false;
+        Vector3 rayOrigin = worldCandidate + Vector3.up * 10f;
+        RaycastHit hit;
+        if (Physics.Raycast(rayOrigin, Vector3.down, out hit, 50f, groundMask))
+        {
+            position = hit.point;
+            return true;
+        }
+
+        position = new Vector3(worldCandidate.x, transform.position.y, worldCandidate.z);
+        return true;
     }
 
     /// <summary>
@@ -249,9 +272,53 @@ public class WaveSpawner : MonoBehaviour
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, spawnRadius);
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, innerRadius);
+        if (spawnShape == SpawnShape.Circle)
+        {
+            DrawCircle(transform.position, spawnRadius, 48, Color.red);
+            DrawCircle(transform.position, innerRadius, 48, Color.yellow);
+        }
+        else
+        {
+            Vector3 half = new Vector3(rectangleSize.x * 0.5f, 0f, rectangleSize.y * 0.5f);
+            Vector3 bl = transform.position + new Vector3(-half.x, 0f, -half.z);
+            Vector3 br = transform.position + new Vector3(half.x, 0f, -half.z);
+            Vector3 tr = transform.position + new Vector3(half.x, 0f, half.z);
+            Vector3 tl = transform.position + new Vector3(-half.x, 0f, half.z);
+            Gizmos.color = Color.red;
+            Gizmos.DrawLine(bl, br);
+            Gizmos.DrawLine(br, tr);
+            Gizmos.DrawLine(tr, tl);
+            Gizmos.DrawLine(tl, bl);
+
+            if (innerRectangleSize.sqrMagnitude > 0f)
+            {
+                Vector3 iHalf = new Vector3(innerRectangleSize.x * 0.5f, 0f, innerRectangleSize.y * 0.5f);
+                Vector3 ibl = transform.position + new Vector3(-iHalf.x, 0f, -iHalf.z);
+                Vector3 ibr = transform.position + new Vector3(iHalf.x, 0f, -iHalf.z);
+                Vector3 itr = transform.position + new Vector3(iHalf.x, 0f, iHalf.z);
+                Vector3 itl = transform.position + new Vector3(-iHalf.x, 0f, iHalf.z);
+                Gizmos.color = Color.yellow;
+                Gizmos.DrawLine(ibl, ibr);
+                Gizmos.DrawLine(ibr, itr);
+                Gizmos.DrawLine(itr, itl);
+                Gizmos.DrawLine(itl, ibl);
+            }
+        }
+    }
+
+    private void DrawCircle(Vector3 center, float radius, int segments, Color color)
+    {
+        if (segments < 4) segments = 4;
+        float angleStep = 360f / segments;
+        Vector3 prev = center + new Vector3(Mathf.Sin(0f) * radius, 0f, Mathf.Cos(0f) * radius);
+        for (int i = 1; i <= segments; i++)
+        {
+            float angle = angleStep * i * Mathf.Deg2Rad;
+            Vector3 next = center + new Vector3(Mathf.Sin(angle) * radius, 0f, Mathf.Cos(angle) * radius);
+            Gizmos.color = color;
+            Gizmos.DrawLine(prev, next);
+            prev = next;
+        }
     }
     #endregion
 }

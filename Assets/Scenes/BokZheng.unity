@@ -3896,6 +3896,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1628554843462028888, guid: 21c6f957c2ecffb468515fdf37982de5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
     - target: {fileID: 3235534787794620987, guid: 21c6f957c2ecffb468515fdf37982de5, type: 3}
       propertyPath: m_Name
       value: BallEnemy
@@ -3962,7 +3966,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxHealth: 100
   invulnerabilityTime: 0.5
-  deathEffect: {fileID: 0}
   damageSound: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

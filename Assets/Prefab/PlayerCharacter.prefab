@@ -195,7 +195,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -424,12 +424,26 @@ MonoBehaviour:
   weaponsParent: {fileID: 7785784331940343484}
   battery: {fileID: 4205091794481701481}
   fireRate: 20
+  turnRate: 0.12
   centerMultiplier: 1
   rotateDuration: 0.1
   rotateEase: 1
-  tossKey: 103
-  handleInput: 1
   modelYawOffset: -90
+  tossKey: 103
+  abilityKey: 116
+  handleInput: 1
+  allowScrollWheel: 1
+  lineSlots: []
+  abilityDuration: 6
+  abilityCooldown: 10
+  slideDuration: 0.18
+  rotateParentToCenterOnAbility: 1
+  centerLocalEulerOffset: {x: 0, y: 0, z: 0}
+  centerLocalPositionOffset: {x: -0.35, y: -0.6, z: 0.6}
+  sideLocalPositionOffset: {x: 0.45, y: -0.45, z: 0.6}
+  sideLocalEulerOffset: {x: 20, y: 0, z: 0}
+  autoApplyInitialCenter: 0
+  WeaponSockets: []
 --- !u!1001 &7747898781007759703
 PrefabInstance:
   m_ObjectHideFlags: 0
