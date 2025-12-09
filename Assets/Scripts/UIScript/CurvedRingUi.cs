@@ -1,54 +1,71 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 [DisallowMultipleComponent]
 public class CurvedRingUI : MonoBehaviour
 {
     [Header("References")]
-    public ArmMount360 mount; // optional, will try to find in parents
-    public PlayerManager player; // optional, will try to find in scene
+    public ArmMount360 mount;
+    public PlayerManager player;
 
-    [Header("Arc Settings")]
+    [Header("UI Parent (Static)")]
+    [Tooltip("UI will not rotate with gun ring. If null, defaults to mount transform.")]
+    public Transform uiParent;
+
+    [Header("Arc Layout")]
+    public float uiRadius = 0.6f;
     public int segments = 64;
-    public float innerRadius = 0.6f; // relative to mount radius; adjust in inspector
-    public float thickness = 0.03f;
-    public float gapDegrees = 0f; // optional gap in degrees (0 = full circle)
-    public Color backgroundColor = new Color(0.15f, 0.15f, 0.15f, 0.5f);
+    [Tooltip("Where the health arc starts (0° = forward).")]
+    public float uiStartAngle = 0f;
+    [Tooltip("Degrees covered by health arc.")]
+    public float healthArcDegrees = 90f;
+    [Tooltip("Degrees covered by battery arc.")]
+    public float batteryArcDegrees = 90f;
+    [Tooltip("Degrees gap between health and battery arcs.")]
+    public float gapDegreesBetweenArcs = 2f;
+
+    [Header("Appearance")]
+    public float lineThickness = 0.03f;
     public Color healthColor = Color.green;
     public Color batteryColor = Color.cyan;
+    public Color backgroundColor = new Color(0.2f, 0.2f, 0.2f, 0.3f);
 
-    [Header("Behaviour")]
-    [Tooltip("How often UI updates (seconds).")]
-    public float updateRate = 0.05f;
+    [Header("Layer Settings")]
+    public string uiLayerName = "Ring";
+    public int uiLayerIndexFallback = 0;
+
+    [Header("Numeric Text (Optional)")]
     public bool showNumericText = true;
-    public Vector3 textLocalOffset = new Vector3(0f, 0.1f, 0f);
+    public Vector3 textLocalOffset = new Vector3(0, 0.1f, 0);
     public float numericFontSize = 0.12f;
 
-    private LineRenderer backgroundRenderer;
+    [Header("Behaviour")]
+    public float updateRate = 0.05f;
+
+    private int uiLayer;
+    private float timer;
+
+    private LineRenderer bgRenderer;
     private LineRenderer healthRenderer;
     private LineRenderer batteryRenderer;
     private TextMesh numericText;
 
-    private float timer;
     private Material lineMaterial;
-    private Transform targetParent;
 
     private void Awake()
     {
-        if (mount == null)
-        {
-            mount = FindFirstObjectByType<ArmMount360>();
-        }
+        // Resolve layer
+        if (!string.IsNullOrWhiteSpace(uiLayerName) && LayerMask.NameToLayer(uiLayerName) != -1)
+            uiLayer = LayerMask.NameToLayer(uiLayerName);
+        else
+            uiLayer = uiLayerIndexFallback;
 
-        if (player == null)
-        {
-            player = FindFirstObjectByType<PlayerManager>();
-        }
+        if (mount == null) mount = FindFirstObjectByType<ArmMount360>();
+        if (player == null) player = FindFirstObjectByType<PlayerManager>();
 
-        // choose parent transform for local-space drawing
-        targetParent = (mount != null && mount.weaponsParent != null) ? mount.weaponsParent : transform;
+        // static UI parent fallback
+        if (uiParent == null) uiParent = (mount != null) ? mount.transform : transform;
 
-        // create runtime material using sprite shader (suitable for colored lines)
         Shader s = Shader.Find("Sprites/Default");
         lineMaterial = (s != null) ? new Material(s) : new Material(Shader.Find("Hidden/Internal-Colored"));
 
@@ -58,22 +75,23 @@ public class CurvedRingUI : MonoBehaviour
 
     private void CreateRenderers()
     {
-        backgroundRenderer = CreateLineRenderer("RingBG", backgroundColor, thickness * 1.0f);
-        healthRenderer = CreateLineRenderer("RingHealth", healthColor, thickness * 1.2f);
-        batteryRenderer = CreateLineRenderer("RingBattery", batteryColor, thickness * 1.2f);
+        bgRenderer = CreateLineRenderer("UI_Background", backgroundColor);
+        healthRenderer = CreateLineRenderer("UI_Health", healthColor);
+        batteryRenderer = CreateLineRenderer("UI_Battery", batteryColor);
 
-        // parent them to targetParent so they follow mount transforms
-        backgroundRenderer.transform.SetParent(targetParent, false);
-        healthRenderer.transform.SetParent(targetParent, false);
-        batteryRenderer.transform.SetParent(targetParent, false);
+        bgRenderer.transform.SetParent(uiParent, false);
+        healthRenderer.transform.SetParent(uiParent, false);
+        batteryRenderer.transform.SetParent(uiParent, false);
 
-        // draw initial full-circle background
-        DrawArc(backgroundRenderer, 1f, innerRadius, segments, gapDegrees);
+        // full circle background
+        DrawFullCircle(bgRenderer, uiRadius, segments);
     }
 
-    private LineRenderer CreateLineRenderer(string name, Color color, float width)
+    private LineRenderer CreateLineRenderer(string name, Color color)
     {
         GameObject go = new GameObject(name);
+        go.layer = uiLayer;
+
         LineRenderer lr = go.AddComponent<LineRenderer>();
         lr.material = lineMaterial;
         lr.startColor = color;
@@ -81,22 +99,29 @@ public class CurvedRingUI : MonoBehaviour
         lr.useWorldSpace = false;
         lr.loop = false;
         lr.positionCount = 0;
+
         lr.numCapVertices = 8;
         lr.numCornerVertices = 8;
-        lr.startWidth = width;
-        lr.endWidth = width;
+
+        lr.startWidth = lineThickness;
+        lr.endWidth = lineThickness;
+
         lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         lr.receiveShadows = false;
         lr.sortingOrder = 1000;
+
         return lr;
     }
 
     private void CreateNumericText()
     {
-        GameObject go = new GameObject("RingNumericText");
-        go.transform.SetParent(targetParent, false);
+        GameObject go = new GameObject("UI_Text");
+        go.layer = uiLayer;
+        go.transform.SetParent(uiParent, false);
+
         go.transform.localPosition = textLocalOffset;
         numericText = go.AddComponent<TextMesh>();
+
         numericText.alignment = TextAlignment.Center;
         numericText.anchor = TextAnchor.MiddleCenter;
         numericText.characterSize = numericFontSize;
@@ -109,71 +134,70 @@ public class CurvedRingUI : MonoBehaviour
     {
         timer += Time.deltaTime;
         if (timer < updateRate) return;
-        timer = 0f;
+        timer = 0;
 
-        float healthPercent = 0f;
-        if (player != null) healthPercent = Mathf.Clamp01(player.GetHealthPercent());
+        float healthPercent = (player != null) ? Mathf.Clamp01(player.GetHealthPercent()) : 0f;
+        float batteryPercent = (mount != null && mount.battery != null)
+            ? Mathf.Clamp01(mount.battery.GetPercent())
+            : 0f;
 
-        float batteryPercent = 0f;
-        if (mount != null && mount.battery != null) batteryPercent = Mathf.Clamp01(mount.battery.GetPercent());
+        float radius = uiRadius;
 
-        DrawArc(healthRenderer, healthPercent, innerRadius * 0.86f, segments, gapDegrees);
-        DrawArc(batteryRenderer, batteryPercent, innerRadius * 0.72f, segments, gapDegrees);
+        float healthStart = uiStartAngle;
+        float batteryStart = uiStartAngle + healthArcDegrees + gapDegreesBetweenArcs;
+
+        DrawArc(healthRenderer, healthPercent, radius, segments, healthArcDegrees, healthStart);
+        DrawArc(batteryRenderer, batteryPercent, radius, segments, batteryArcDegrees, batteryStart);
 
         if (numericText != null)
         {
             int hp = Mathf.RoundToInt(healthPercent * 100f);
             int bat = Mathf.RoundToInt(batteryPercent * 100f);
             numericText.text = $"HP {hp}%\nBAT {bat}%";
-            numericText.transform.localPosition = textLocalOffset;
-            // keep readable color blending
-            numericText.color = Color.white;
         }
     }
 
-    /// <summary>
-    /// Draw arc in local XZ plane (y up). percent in [0,1].
-    /// </summary>
-    private void DrawArc(LineRenderer lr, float percent, float radius, int segs, float gapDeg)
+    private void DrawFullCircle(LineRenderer lr, float radius, int segs)
     {
-        if (lr == null) return;
+        lr.positionCount = segs + 1;
+        float step = 360f / segs;
+
+        for (int i = 0; i <= segs; i++)
+        {
+            float angle = Mathf.Deg2Rad * (i * step);
+            lr.SetPosition(i, new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius));
+        }
+    }
+
+    private void DrawArc(LineRenderer lr, float percent, float radius, int segs, float arcDegrees, float startDeg)
+    {
+        int usedSegs = Mathf.Max(4, segs);
         percent = Mathf.Clamp01(percent);
 
-        int usedSegs = Mathf.Max(4, segs);
-        float totalAngle = 360f - Mathf.Max(0f, gapDeg);
-        float angleStep = totalAngle / usedSegs;
+        float endDeg = startDeg + arcDegrees * percent;
         int points = Mathf.CeilToInt(usedSegs * percent) + 1;
-        if (points < 2) points = 2;
-
         lr.positionCount = points;
-        float startAngle = gapDeg * 0.5f; // center gap around 0
-        float endAngle = startAngle + totalAngle * percent;
 
         for (int i = 0; i < points; i++)
         {
-            float t = (points == 1) ? 0f : (float)i / (points - 1);
-            float angle = Mathf.Lerp(startAngle, endAngle, t) * Mathf.Deg2Rad;
-            // local XZ plane point (y = 0)
+            float t = (float)i / (points - 1);
+            float angle = Mathf.Lerp(startDeg, endDeg, t) * Mathf.Deg2Rad;
+
             Vector3 p = new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
             lr.SetPosition(i, p);
         }
     }
 
-    private void OnValidate()
-    {
-        // Keep sane values in editor
-        segments = Mathf.Clamp(segments, 8, 512);
-        innerRadius = Mathf.Max(0.05f, innerRadius);
-        thickness = Mathf.Max(0.001f, thickness);
-        updateRate = Mathf.Max(0.01f, updateRate);
-    }
-
     private void OnDestroy()
     {
-        // cleanup created materials to avoid leaks
-        if (lineMaterial != null)
-        {
-            Destroy(lineMaterial);
-        }
+        if (lineMaterial != null) Destroy(lineMaterial);
+    }
+
+    private void OnValidate()
+    {
+        segments = Mathf.Clamp(segments, 8, 512);
+        uiRadius = Mathf.Max(0.05f, uiRadius);
+        lineThickness = Mathf.Max(0.001f, lineThickness);
+        updateRate = Mathf.Max(0.01f, updateRate);
     }
 }
