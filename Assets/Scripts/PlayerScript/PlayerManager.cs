@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerManager : MonoBehaviour, IDamageable
@@ -7,7 +5,6 @@ public class PlayerManager : MonoBehaviour, IDamageable
     [Header("Health Settings")]
     [SerializeField] private float maxHealth = 100f;
     [SerializeField] private float invulnerabilityTime = 0.5f;
-    //[SerializeField] private GameObject deathEffect;
     [SerializeField] private AudioClip damageSound;
 
     public float CurrentHealth => currentHealth;
@@ -18,7 +15,7 @@ public class PlayerManager : MonoBehaviour, IDamageable
     private bool isDead;
 
     public event System.Action OnDeath;
-    public event System.Action<float> OnHealthChanged; 
+    public event System.Action<float> OnHealthChanged;
 
     private void Awake()
     {
@@ -27,65 +24,69 @@ public class PlayerManager : MonoBehaviour, IDamageable
 
     private void Start()
     {
-        OnHealthChanged?.Invoke(currentHealth / maxHealth);
+        OnHealthChanged?.Invoke(GetHealthPercent());
     }
 
     public void TakeDamage(float amount)
     {
-        Debug.Log("Player TakeDamage: " + amount);
-        if (isDead || Time.time < lastDamageTime + invulnerabilityTime) return;
+        if (isDead || Time.time < lastDamageTime + invulnerabilityTime)
+        {
+            return;
+        }
 
         currentHealth -= amount;
         lastDamageTime = Time.time;
 
-        OnHealthChanged?.Invoke(currentHealth / maxHealth);
-        //AudioSource.PlayClipAtPoint(damageSound, transform.position);
+        OnHealthChanged?.Invoke(GetHealthPercent());
 
-        //StartCoroutine(DamageFlash());
-
-        OnHealthChanged?.Invoke(currentHealth / maxHealth);
-
-        if (currentHealth <= 0)
+        if (currentHealth <= 0f)
         {
             Die();
         }
-
     }
-
-    //private IEnumerator DamageFlash()
-    //{
-    //    var renderer = GetComponentInChildren<Renderer>();
-    //    if (renderer)
-    //    {
-    //        Color original = renderer.material.color;
-    //        renderer.material.color = Color.red;
-    //        yield return new WaitForSeconds(0.1f);
-    //        renderer.material.color = original;
-    //    }
-    //}
 
     public float GetHealthPercent()
     {
+        if (maxHealth <= 0f)
+        {
+            return 0f;
+        }
+
         return currentHealth / maxHealth;
     }
 
     private void Die()
     {
+        if (isDead)
+        {
+            return;
+        }
+
         isDead = true;
 
-        GetComponent<PlayerMovement>().enabled = false;
-        GetComponent<MouseMovement>().enabled = false;
+        PlayerMovement movement = GetComponent<PlayerMovement>();
+        if (movement != null)
+        {
+            movement.enabled = false;
+        }
 
-        //if (deathEffect) Instantiate(deathEffect, transform.position, Quaternion.identity);
+        MouseMovement mouse = GetComponentInChildren<MouseMovement>();
+        if (mouse != null)
+        {
+            mouse.enabled = false;
+        }
 
         OnDeath?.Invoke();
-
-        Debug.Log("Player Died");
     }
 
     public void Heal(float amount)
     {
+        if (isDead)
+        {
+            return;
+        }
+
         currentHealth = Mathf.Min(currentHealth + amount, maxHealth);
-        OnHealthChanged?.Invoke(currentHealth / maxHealth);
+        OnHealthChanged?.Invoke(GetHealthPercent());
     }
 }

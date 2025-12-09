@@ -63,12 +63,11 @@ public class WaveSpawner : MonoBehaviour
     private int aliveEnemies = 0;
     private Coroutine runCoroutine;
 
-    // events
-    public event Action<int> OnWaveStarted;            // passes wave index
-    public event Action<int> OnWaveCompleted;          // passes wave index
+    public event Action<int> OnWaveStarted;          
+    public event Action<int> OnWaveCompleted;          
     public event Action OnAllWavesCompleted;
-    public event Action<int> OnEnemySpawned;           // passes remaining enemies in wave after spawn
-    public event Action<int> OnEnemyDied;              // passes alive count
+    public event Action<int> OnEnemySpawned;          
+    public event Action<int> OnEnemyDied;             
 
     private void Awake()
     {
@@ -78,19 +77,12 @@ public class WaveSpawner : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Begins the full wave sequence (start from wave 0).
-    /// If a run is already active it will stop and restart.
-    /// </summary>
     public void StartWaves()
     {
         if (runCoroutine != null) StopCoroutine(runCoroutine);
         runCoroutine = StartCoroutine(RunWaves());
     }
 
-    /// <summary>
-    /// Stop an active wave run (cancels further spawns), but does not destroy existing enemies.
-    /// </summary>
     public void StopWaves()
     {
         if (runCoroutine != null)
@@ -186,22 +178,18 @@ public class WaveSpawner : MonoBehaviour
         return spawnPrefabs[idx];
     }
 
-    /// <summary>
-    /// Attempts to pick a random position inside the configured ring/area and sample NavMesh near it.
-    /// </summary>
     public bool TryGetRandomSpawnPosition(out Vector3 position)
     {
         Vector3 worldCandidate = transform.position;
 
         if (spawnShape == SpawnShape.Circle)
         {
-            // sample point within donut (innerRadius..spawnRadius)
             float angle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
             float r = Mathf.Sqrt(UnityEngine.Random.value) * (spawnRadius - innerRadius) + innerRadius;
             Vector3 offset = new Vector3(Mathf.Sin(angle) * r, 0f, Mathf.Cos(angle) * r);
             worldCandidate = transform.position + offset;
         }
-        else // Rectangle
+        else 
         {
             int attempts = 0;
             const int maxAttempts = 32;
@@ -211,7 +199,6 @@ public class WaveSpawner : MonoBehaviour
             {
                 float rx = UnityEngine.Random.Range(-half.x, half.x);
                 float rz = UnityEngine.Random.Range(-half.y, half.y);
-                // if inner rectangle defined, enforce outside inner rectangle
                 if (innerRectangleSize.sqrMagnitude > 0f)
                 {
                     if (Mathf.Abs(rx) < innerHalf.x && Mathf.Abs(rz) < innerHalf.y)
@@ -234,34 +221,25 @@ public class WaveSpawner : MonoBehaviour
         return true;
     }
 
-    /// <summary>
-    /// Register an enemy so the spawner can track alive count; subscribes to its death event.
-    /// </summary>
     public void RegisterEnemy(Enemy enemy)
     {
         if (enemy == null) return;
         aliveEnemies++;
-        // subscribe to death event (requires Enemy to call HandleDeath() in Die())
         enemy.GetComponent<BaseEnemy>().OnDeath += () => { UnregisterEnemy(enemy); };
-        // also optionally listen for GameObject destruction fallback
         StartCoroutine(WatchEnemyFallback(enemy));
         OnEnemySpawned?.Invoke(aliveEnemies);
     }
 
     private IEnumerator WatchEnemyFallback(Enemy e)
     {
-        // if enemy is destroyed without invoking OnDeath, we still want to decrement
         while (e != null && !e.IsDead)
         {
             yield return null;
         }
-        // when IsDead becomes true (or object destroyed), UnregisterEnemy will be called via event; if event wasn't fired we make sure to cleanup
+       
         yield break;
     }
 
-    /// <summary>
-    /// Unregister an enemy when it dies.
-    /// </summary>
     private void UnregisterEnemy(Enemy enemy)
     {
         aliveEnemies = Mathf.Max(0, aliveEnemies - 1);
