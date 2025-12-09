@@ -112,20 +112,15 @@ public class WaveSpawner : MonoBehaviour
                 Vector3 spawnPos;
                 TryGetRandomSpawnPosition(out spawnPos);
 
-                // show indicator (if any)
                 if (spawnIndicatorPrefab != null && indicatorDelay > 0f)
                 {
                     GameObject ind = Instantiate(spawnIndicatorPrefab, spawnPos, Quaternion.identity);
-                    // optional: indicator can implement its own behavior; we destroy after delay+small buffer
                     Destroy(ind, indicatorDelay + 0.25f);
                 }
 
-                // wait indicator delay
                 float wait = indicatorDelay;
-                // if no indicator, we still may optionally wait a minimal amount (0)
                 if (wait > 0f) yield return new WaitForSeconds(wait);
 
-                // spawn actual enemy
                 GameObject prefab = ChooseEnemyPrefab();
                 if (prefab != null)
                 {
@@ -133,7 +128,6 @@ public class WaveSpawner : MonoBehaviour
                     var enemy = go.GetComponent<Enemy>();
                     if (enemy != null)
                     {
-                        // set spawner reference so enemies can report back to spawner if desired
                         enemy.spawner = this;
                         RegisterEnemy(enemy);
                     }
@@ -142,30 +136,23 @@ public class WaveSpawner : MonoBehaviour
                 spawned++;
                 OnEnemySpawned?.Invoke(toSpawn - spawned);
 
-                // wait spawn interval
                 if (wave.spawnInterval > 0f)
                     yield return new WaitForSeconds(wave.spawnInterval);
                 else
                     yield return null;
             }
-    
-            // wait until all spawned enemies die
-            // if aliveEnemies is 0 immediately this will pass
+
             while (aliveEnemies > 0)
             {
                 yield return null;
             }
 
-            // wave complete
             OnWaveCompleted?.Invoke(currentWaveIndex);
 
-            // next wave
             currentWaveIndex++;
-            // small inter-wave buffer (optional)
             yield return new WaitForSeconds(0.25f);
         }
 
-        // all waves done
         OnAllWavesCompleted?.Invoke();
         runCoroutine = null;
     }

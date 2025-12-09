@@ -74,7 +74,6 @@ public class Enemy : BaseEnemy, IDamageable
 
     public List<GameObject> WeaponSockets;
 
-    // runtime movement override (used to apply temporary slowdowns)
     private float originalMoveSpeed;
     private float runtimeMoveSpeed;
     private Coroutine slowCoroutine;
@@ -89,7 +88,7 @@ public class Enemy : BaseEnemy, IDamageable
         rb.interpolation = RigidbodyInterpolation.Interpolate;
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
         rb.freezeRotation = true;
-        rb.isKinematic = false; // physics-driven; we'll control movement via MovePosition
+        rb.isKinematic = false; 
 
         InitializeFromConfig();
 
@@ -158,7 +157,6 @@ public class Enemy : BaseEnemy, IDamageable
         currentHealth = config.maxHealth;
         originalMoveSpeed = config.moveSpeed;
         runtimeMoveSpeed = originalMoveSpeed;
-        // movement properties are used in FixedUpdate
     }
 
     private void UpdateStateMachine()
@@ -194,16 +192,10 @@ public class Enemy : BaseEnemy, IDamageable
 
     private void UpdateAnimations()
     {
-        // Use Rigidbody.linearVelocity instead of obsolete velocity where available
         Vector3 horizontalVel = Vector3.zero;
         if (rb != null)
         {
-#if UNITY_2023_1_OR_NEWER
             horizontalVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-#else
-            // Fallback if older Unity version doesn't have linearVelocity
-            horizontalVel = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
-#endif
         }
 
         float speed = horizontalVel.magnitude;
@@ -226,7 +218,6 @@ public class Enemy : BaseEnemy, IDamageable
             return;
         }
 
-        // if we lost sight and exceeded chaseRange, return to Idle
         if (distanceToPlayer > config.chaseRange || !HasLineOfSightToPlayer())
         {
             TransitionToState(EnemyState.Idle);
@@ -253,7 +244,6 @@ public class Enemy : BaseEnemy, IDamageable
     private void TransitionToState(EnemyState newState)
     {
         currentState = newState;
-        // no NavMeshAgent to stop; movement handled in FixedUpdate
     }
 
     public void TakeDamage(float damage)
@@ -277,7 +267,6 @@ public class Enemy : BaseEnemy, IDamageable
 
         ShowDamageNumber(damage);
 
-        // apply temporary slowdown when hit
         StartHitSlowdown();
     }
 
@@ -285,7 +274,6 @@ public class Enemy : BaseEnemy, IDamageable
     {
         if (hitSlowMultiplier >= 1f || hitSlowDuration <= 0f) return;
 
-        // restart coroutine if already running so duration is refreshed
         if (slowCoroutine != null)
         {
             StopCoroutine(slowCoroutine);
@@ -297,10 +285,8 @@ public class Enemy : BaseEnemy, IDamageable
 
     private IEnumerator SlowdownCoroutine(float multiplier, float duration, float smoothRestoreTime)
     {
-        // apply immediate slow
         runtimeMoveSpeed = originalMoveSpeed * Mathf.Clamp(multiplier, 0f, 1f);
 
-        // wait for slowdown duration
         float elapsed = 0f;
         while (elapsed < duration)
         {
@@ -308,7 +294,6 @@ public class Enemy : BaseEnemy, IDamageable
             yield return null;
         }
 
-        // smooth restore to original speed
         if (smoothRestoreTime > 0f)
         {
             float startSpeed = runtimeMoveSpeed;
@@ -345,12 +330,8 @@ public class Enemy : BaseEnemy, IDamageable
         isKnockedBack = true;
 
         rb.isKinematic = false;
-#if UNITY_2023_1_OR_NEWER
         rb.linearVelocity = Vector3.zero;
-#else
-        // Fallback for older Unity versions
-        rb.velocity = Vector3.zero;
-#endif
+
         rb.AddForce(impulse, ForceMode.Impulse);
 
         float elapsed = 0f;
@@ -360,13 +341,10 @@ public class Enemy : BaseEnemy, IDamageable
             yield return null;
         }
 
-#if UNITY_2023_1_OR_NEWER
         rb.linearVelocity = Vector3.zero;
-#else
-        rb.velocity = Vector3.zero;
-#endif
+
         rb.angularVelocity = Vector3.zero;
-        rb.isKinematic = false; // keep non-kinematic to allow MovePosition; MovePosition works with non-kinematic if interpolation enabled
+        rb.isKinematic = false; 
 
         isKnockedBack = false;
 
@@ -499,7 +477,6 @@ public class Enemy : BaseEnemy, IDamageable
         Vector3 dir = (camTarget.position - origin).normalized;
         if (Physics.Raycast(origin, dir, out var hit, config.chaseRange))
         {
-            // if the ray hits the player (or child) consider that LOS; otherwise blocked
             if (hit.collider != null)
             {
                 if (hit.collider.transform.root == player.transform.root || hit.collider.GetComponent<PlayerManager>() != null) return true;
