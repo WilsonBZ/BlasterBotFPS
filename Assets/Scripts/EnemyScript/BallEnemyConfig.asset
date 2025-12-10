@@ -9,22 +9,22 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
+  m_Script: {fileID: 11500000, guid: 719de01ba98192d4eb4d817a605bce86, type: 3}
   m_Name: BallEnemyConfig
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyConfig
-  isRanged: 0
+  m_EditorClassIdentifier: 
+  isRanged: 1
   preferredDistance: 10
   fireCooldown: 1.5
   projectilePrefab: {fileID: 0}
   canExplode: 1
-  explosionRange: 3
-  explosionDamage: 80
-  explosionForce: 10
+  explosionRange: 4
+  explosionDamage: 50
+  explosionForce: 30
   maxHealth: 100
-  moveSpeed: 15
-  acceleration: 15
-  detectionRange: 1000
-  chaseRange: 1000
+  moveSpeed: 18
+  acceleration: 8
+  detectionRange: 100
+  chaseRange: 20
   fleeDistance: 10
   fleeDuration: 3
   fleeOnHit: 0
@@ -32,4 +32,4 @@ MonoBehaviour:
   attackRange: 2
   attackRadius: 1.5
   attackCooldown: 2
-  deathCleanupTime: 0
+  deathCleanupTime: 3

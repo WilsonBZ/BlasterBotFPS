@@ -102,11 +102,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: 2e4ba0ffc3d9a8040b8b7561fb104846, type: 2}
-  groundCheckOffset: {x: 0, y: -0.9, z: 0}
+  groundCheckOffset: {x: 0, y: -0.1, z: 0}
   groundMask:
     serializedVersion: 2
     m_Bits: 64
-  groundCheckRadius: 6.32
+  groundCheckRadius: 1
   healthBarPrefab: {fileID: 6805865967184887501, guid: fc06b121907732b4fbd2cf7dd8f374f7, type: 3}
   healthBarOffset: {x: 0, y: 2, z: 0}
   attackPoint: {fileID: 6962082424049450652}

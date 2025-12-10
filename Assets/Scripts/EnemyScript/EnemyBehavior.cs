@@ -81,7 +81,13 @@ public class Enemy : BaseEnemy, IDamageable
     private void Awake()
     {
         animator = GetComponent<Animator>();
+
+        // Try multiple lookups for player to be robust in build
         player = FindFirstObjectByType<PlayerManager>();
+        if (player == null)
+            player = FindObjectOfType<PlayerManager>();
+        if (player == null)
+            Debug.LogWarning("Enemy: PlayerManager not found in scene. Enemy will be inactive until a PlayerManager is present.");
 
         rb = GetComponent<Rigidbody>();
         if (rb == null) rb = gameObject.AddComponent<Rigidbody>();
@@ -105,11 +111,17 @@ public class Enemy : BaseEnemy, IDamageable
 
     private void Update()
     {
+        // if no player reference, do nothing (prevents nullref in build) — log helps debugging
+        if (player == null)
+        {
+            return;
+        }
+
         if (isExploded) return;
 
         isGrounded = Physics.CheckSphere(transform.position + groundCheckOffset, groundCheckRadius, groundMask);
 
-        if (config.canExplode && Vector3.Distance(transform.position, player.transform.position) <= config.explosionRange)
+        if (config != null && config.canExplode && Vector3.Distance(transform.position, player.transform.position) <= config.explosionRange)
         {
             StartCoroutine(Explode());
             return;
@@ -122,7 +134,7 @@ public class Enemy : BaseEnemy, IDamageable
     private void FixedUpdate()
     {
         // physics-based movement: only applied during Chase when not knocked back or attacking
-        if (isExploded || isKnockedBack) return;
+        if (player == null || isExploded || isKnockedBack) return;
 
         if (currentState == EnemyState.Chase)
         {
@@ -154,13 +166,23 @@ public class Enemy : BaseEnemy, IDamageable
 
     private void InitializeFromConfig()
     {
-        currentHealth = config.maxHealth;
-        originalMoveSpeed = config.moveSpeed;
+        if (config == null)
+        {
+            Debug.LogWarning("Enemy: config is null on InitializeFromConfig.");
+            originalMoveSpeed = 3.5f;
+        }
+        else
+        {
+            currentHealth = config.maxHealth;
+            originalMoveSpeed = config.moveSpeed;
+        }
         runtimeMoveSpeed = originalMoveSpeed;
     }
 
     private void UpdateStateMachine()
     {
+        if (player == null) return;
+
         float distanceToPlayer = Vector3.Distance(transform.position, player.transform.position);
 
         switch (currentState)
@@ -195,6 +217,7 @@ public class Enemy : BaseEnemy, IDamageable
         Vector3 horizontalVel = Vector3.zero;
         if (rb != null)
         {
+            // use rb.velocity for compatibility across Unity versions and builds
             horizontalVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
         }
 
@@ -204,7 +227,8 @@ public class Enemy : BaseEnemy, IDamageable
 
     private void HandleIdleState(float distanceToPlayer)
     {
-        if (distanceToPlayer <= config.detectionRange && HasLineOfSightToPlayer())
+        if (player == null) return;
+        if (config != null && distanceToPlayer <= config.detectionRange && HasLineOfSightToPlayer())
         {
             TransitionToState(EnemyState.Chase);
         }
@@ -212,6 +236,8 @@ public class Enemy : BaseEnemy, IDamageable
 
     private void HandleChaseState(float distanceToPlayer)
     {
+        if (config == null) return;
+
         if (distanceToPlayer <= config.attackRange)
         {
             TransitionToState(EnemyState.Attack);
@@ -226,6 +252,8 @@ public class Enemy : BaseEnemy, IDamageable
 
     private void HandleAttackState(float distanceToPlayer)
     {
+        if (config == null) return;
+
         if (distanceToPlayer > config.attackRange * 1.1f)
         {
             TransitionToState(EnemyState.Chase);
@@ -259,7 +287,7 @@ public class Enemy : BaseEnemy, IDamageable
         }
         else
         {
-            if (config.fleeOnHit)
+            if (config != null && config.fleeOnHit)
             {
                 StartCoroutine(FleeBehavior());
             }
@@ -472,10 +500,11 @@ public class Enemy : BaseEnemy, IDamageable
 
     private bool HasLineOfSightToPlayer()
     {
+        if (player == null) return false;
         var camTarget = player.transform;
         Vector3 origin = transform.position + Vector3.up * 0.5f;
         Vector3 dir = (camTarget.position - origin).normalized;
-        if (Physics.Raycast(origin, dir, out var hit, config.chaseRange))
+        if (Physics.Raycast(origin, dir, out var hit, config != null ? config.chaseRange : 50f))
         {
             if (hit.collider != null)
             {
@@ -495,39 +524,3 @@ public enum EnemyState
     Dead
 }
 
-[CreateAssetMenu(fileName = "EnemyConfig", menuName = "Game/Enemy Config")]
-public class EnemyConfig : ScriptableObject
-{
-    [Header("Ranged Combat")]
-    public bool isRanged = true;
-    public float preferredDistance = 10f;
-    public float fireCooldown = 1.5f;
-    public GameObject projectilePrefab;
-
-    [Header("Explosion Settings")]
-    public bool canExplode = true;
-    public float explosionRange = 2f;
-    public float explosionDamage = 50f;
-    public float explosionForce = 10f;
-
-    [Header("Health")]
-    public float maxHealth = 100f;
-
-    [Header("Movement")]
-    public float moveSpeed = 3.5f;
-    public float acceleration = 8f;
-    public float detectionRange = 15f;
-    public float chaseRange = 20f;
-    public float fleeDistance = 10f;
-    public float fleeDuration = 3f;
-    public bool fleeOnHit = true;
-
-    [Header("Combat")]
-    public float attackDamage = 15f;
-    public float attackRange = 2f;
-    public float attackRadius = 1.5f;
-    public float attackCooldown = 2f;
-
-    [Header("Death")]
-    public float deathCleanupTime = 3f;
-}
