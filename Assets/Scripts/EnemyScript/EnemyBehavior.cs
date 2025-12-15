@@ -214,16 +214,20 @@ public class Enemy : BaseEnemy, IDamageable
 
     private void UpdateAnimations()
     {
-        Vector3 horizontalVel = Vector3.zero;
-        if (rb != null)
+        if (animator == null) return;
+
+        float move01 = 0f;
+
+        if (currentState == EnemyState.Chase && !isKnockedBack && isGrounded)
         {
-            // use rb.velocity for compatibility across Unity versions and builds
-            horizontalVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+            Vector3 horizontalVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+
+            move01 = horizontalVel.magnitude / Mathf.Max(0.01f, originalMoveSpeed);
         }
 
-        float speed = horizontalVel.magnitude;
-        animator.SetFloat(animMoveSpeed, speed / Mathf.Max(0.0001f, runtimeMoveSpeed)); 
+        animator.SetFloat(animMoveSpeed, move01, 0.1f, Time.deltaTime);
     }
+
 
     private void HandleIdleState(float distanceToPlayer)
     {
