@@ -191,6 +191,6 @@ public class PauseMenuUi : MonoBehaviour
             return;
         }
 
-        UnityEditor.EditorApplication.isPlaying = false;
+        //UnityEditor.EditorApplication.isPlaying = false;
     }
 }
