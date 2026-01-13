@@ -12,19 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 719de01ba98192d4eb4d817a605bce86, type: 3}
   m_Name: BallEnemyConfig
   m_EditorClassIdentifier: 
-  isRanged: 1
+  isRanged: 0
   preferredDistance: 10
   fireCooldown: 1.5
   projectilePrefab: {fileID: 0}
   canExplode: 1
   explosionRange: 4
   explosionDamage: 50
-  explosionForce: 30
+  explosionForce: 100
   maxHealth: 100
   moveSpeed: 18
   acceleration: 8
-  detectionRange: 100
-  chaseRange: 20
+  detectionRange: 10000
+  chaseRange: 10000
   fleeDistance: 10
   fleeDuration: 3
   fleeOnHit: 0
