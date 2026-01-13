@@ -185,14 +185,14 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2930150439923722898}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -2.59657, y: 0.05233, z: 1.2096}
+  m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1826742211582610266}
   m_Father: {fileID: 2626120525741371093}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
 --- !u!1 &3652299805839542252
 GameObject:
   m_ObjectHideFlags: 0
@@ -296,15 +296,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pellets: 1
   spreadAngle: 0
-  fireRate: 3
-  energyCostPerShot: 40
+  fireRate: 0.8
+  energyCostPerShot: 30
   firePoint: {fileID: 8737541378474694541}
   projectilePrefab: {fileID: 4206907625901127713, guid: 6f221f56ddce7df4d8f2919c3fadacfc, type: 3}
   useCrosshairWhenCentered: 1
   muzzleFlash: {fileID: 5985650608866012531}
-  audioSource: {fileID: 8695993169629380181}
+  audioSource: {fileID: 0}
   shootSound: {fileID: 0}
-  recoilAngle: 10
+  recoilAngle: 30
   recoilRandomness: 0.2
   recoilReturnSpeed: 10
   recoilRoot: {fileID: 212078775552731}
@@ -442,31 +442,31 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 8affd180d98168d4f96e6891817651b4, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 2.59657
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 8affd180d98168d4f96e6891817651b4, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.05233
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 8affd180d98168d4f96e6891817651b4, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -1.2096
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 8affd180d98168d4f96e6891817651b4, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.7071068
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 8affd180d98168d4f96e6891817651b4, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 8affd180d98168d4f96e6891817651b4, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.7071068
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 8affd180d98168d4f96e6891817651b4, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 8affd180d98168d4f96e6891817651b4, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
