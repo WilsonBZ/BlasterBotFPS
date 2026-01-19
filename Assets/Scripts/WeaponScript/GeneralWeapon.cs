@@ -240,4 +240,6 @@ public class GeneralWeapon : MonoBehaviour
         spreadAngle = Mathf.Max(1f, spreadAngle - reduction);
     }
 
+    // public getter so external systems can read current spread value (safe, no reflection)
+    public float SpreadAngle => spreadAngle;
 }

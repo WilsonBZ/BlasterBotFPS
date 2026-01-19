@@ -24690,12 +24690,20 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3357920304850817504, guid: 3649a6e0e823d7f4f8a7bf45971364c4, type: 3}
+      propertyPath: walkSpeed
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 3357920304850817504, guid: 3649a6e0e823d7f4f8a7bf45971364c4, type: 3}
       propertyPath: zooming_Effect
       value: 
       objectReference: {fileID: 4551889221885054041}
     - target: {fileID: 4504554002754630755, guid: 3649a6e0e823d7f4f8a7bf45971364c4, type: 3}
       propertyPath: m_Name
       value: PlayerCharacter
+      objectReference: {fileID: 0}
+    - target: {fileID: 4827219036622012798, guid: 3649a6e0e823d7f4f8a7bf45971364c4, type: 3}
+      propertyPath: slotCount
+      value: 5
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

@@ -1,50 +1,47 @@
 using System;
-using System.Linq;
-using System.Reflection;
-    using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
 public class BuffMenu : MonoBehaviour
 {
-    [Header("UI (optional - will be created at runtime if left empty)")]
-    public GameObject panel;                // root panel to toggle
+    public GameObject panel;
     public Button healButton;
     public Button pelletsButton;
     public Button spreadButton;
-
-    [Header("Behaviour")]
-    [Tooltip("Key to toggle buff menu")]
     public KeyCode toggleKey = KeyCode.H;
 
-    void Start()
+    private void Start()
     {
         EnsureUIExists();
         HookButtons();
         SetPanelActive(false);
+
+        if (BuffManager.Instance != null)
+            BuffManager.Instance.OnBuffsChanged += RefreshUI;
+
+        RefreshUI();
     }
 
-    void Update()
+    private void OnDestroy()
+    {
+        if (BuffManager.Instance != null)
+            BuffManager.Instance.OnBuffsChanged -= RefreshUI;
+    }
+
+    private void Update()
     {
         if (Input.GetKeyDown(toggleKey))
-        {
             SetPanelActive(!(panel != null && panel.activeSelf));
-        }
     }
 
     private void EnsureUIExists()
     {
-        if (panel != null && healButton != null && pelletsButton != null && spreadButton != null)
-            return;
+        if (panel != null && healButton != null && pelletsButton != null && spreadButton != null) return;
 
-        // Ensure EventSystem exists
         if (FindFirstObjectByType<EventSystem>() == null)
-        {
-            var es = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
-            es.hideFlags = HideFlags.DontSaveInBuild;
-        }
+            new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
 
-        // Create Canvas if necessary
         Canvas canvas = FindFirstObjectByType<Canvas>();
         if (canvas == null)
         {
@@ -70,19 +67,17 @@ public class BuffMenu : MonoBehaviour
             img.color = new Color(0f, 0f, 0f, 0.6f);
         }
 
-        // create horizontal layout container
-        var layout = panel.GetComponent<HorizontalLayoutGroup>();
-        if (layout == null) layout = panel.AddComponent<HorizontalLayoutGroup>();
+        var layout = panel.GetComponent<HorizontalLayoutGroup>() ?? panel.AddComponent<HorizontalLayoutGroup>();
         layout.childAlignment = TextAnchor.MiddleCenter;
         layout.spacing = 10f;
         layout.padding = new RectOffset(10, 10, 10, 10);
 
-        Func<string, Button> createButton = (label) =>
+        Button CreateButton(string label)
         {
             var go = new GameObject(label + "Button");
             go.transform.SetParent(panel.transform, false);
-            var btnImage = go.AddComponent<Image>();
-            btnImage.color = new Color(1f, 1f, 1f, 0.95f);
+            var img = go.AddComponent<Image>();
+            img.color = new Color(1f, 1f, 1f, 0.95f);
             var btn = go.AddComponent<Button>();
             var rt = go.GetComponent<RectTransform>();
             rt.sizeDelta = new Vector2(150f, 50f);
@@ -92,8 +87,9 @@ public class BuffMenu : MonoBehaviour
             var text = textGO.AddComponent<Text>();
             text.text = label;
             text.alignment = TextAnchor.MiddleCenter;
-            //text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             text.color = Color.black;
+
             var tr = textGO.GetComponent<RectTransform>();
             tr.anchorMin = Vector2.zero;
             tr.anchorMax = Vector2.one;
@@ -101,11 +97,11 @@ public class BuffMenu : MonoBehaviour
             tr.offsetMax = Vector2.zero;
 
             return btn;
-        };
+        }
 
-        if (healButton == null) healButton = createButton("Heal 20%");
-        if (pelletsButton == null) pelletsButton = createButton(" +1 Pellets");
-        if (spreadButton == null) spreadButton = createButton(" -30% Spread");
+        if (healButton == null) healButton = CreateButton("Heal");
+        if (pelletsButton == null) pelletsButton = CreateButton("Pellets");
+        if (spreadButton == null) spreadButton = CreateButton("Spread");
     }
 
     private void HookButtons()
@@ -127,76 +123,67 @@ public class BuffMenu : MonoBehaviour
         Cursor.lockState = active ? CursorLockMode.None : CursorLockMode.Locked;
     }
 
+    private void RefreshUI()
+    {
+        UpdateButtonWithCount(healButton, "Heal", BuffType.Heal);
+        UpdateButtonWithCount(pelletsButton, "Pellets", BuffType.Pellets);
+        UpdateButtonWithCount(spreadButton, "Spread", BuffType.Spread);
+    }
+
+    private void UpdateButtonWithCount(Button btn, string label, BuffType type)
+    {
+        if (btn == null) return;
+        var txt = btn.GetComponentInChildren<Text>();
+        int count = BuffManager.Instance != null ? BuffManager.Instance.GetCount(type) : 0;
+        if (txt != null) txt.text = $"{label} ({count})";
+    }
+
     private void OnHealPressed()
     {
-        var player = FindFirstObjectByType<PlayerManager>();
-        if (player == null)
-        {
-            Debug.LogWarning("BuffMenu: PlayerManager not found.");
-            return;
-        }
+        Debug.Log("Heal button pressed");
+        if (BuffManager.Instance == null) return;
+        if (!BuffManager.Instance.UseBuff(BuffType.Heal)) return;
 
-        float healAmount = player.MaxHealth * 0.2f;
-        player.Heal(healAmount);
+        var player = FindFirstObjectByType<PlayerManager>();
+        if (player == null) { Debug.LogWarning("PlayerManager not found"); return; }
+
+        player.Heal(player.MaxHealth * 0.2f);
+        Debug.Log("Heal applied to player");
     }
 
     private void OnPelletsPressed()
     {
-        var player = FindFirstObjectByType<PlayerManager>();
-        if (player == null)
-        {
-            Debug.LogWarning("BuffMenu: PlayerManager not found.");
-            return;
-        }
+        Debug.Log("Pellets button pressed");
+        if (BuffManager.Instance == null) return;
+        if (!BuffManager.Instance.UseBuff(BuffType.Pellets)) return;
 
-        // Try to find weapons parent (player children)
+        var player = FindFirstObjectByType<PlayerManager>();
+        if (player == null) { Debug.LogWarning("PlayerManager not found"); return; }
+
         var modulars = player.GetComponentsInChildren<ModularWeapon>(true);
+        Debug.Log($"Found {modulars.Length} ModularWeapon(s) for pellets buff");
+
         foreach (var w in modulars)
         {
-            w.pellets += 1;
-        }
-
-        // Handle GeneralWeapon (private fields / methods)
-        var generals = player.GetComponentsInChildren<GeneralWeapon>(true);
-        foreach (var gw in generals)
-        {
-            // use public method if available
-            gw.BuffPellets(1);
+            w.AddPellets(1);
         }
     }
 
     private void OnSpreadPressed()
     {
+        Debug.Log("Spread button pressed");
+        if (BuffManager.Instance == null) return;
+        if (!BuffManager.Instance.UseBuff(BuffType.Spread)) return;
+
         var player = FindFirstObjectByType<PlayerManager>();
-        if (player == null)
-        {
-            Debug.LogWarning("BuffMenu: PlayerManager not found.");
-            return;
-        }
+        if (player == null) { Debug.LogWarning("PlayerManager not found"); return; }
 
         var modulars = player.GetComponentsInChildren<ModularWeapon>(true);
+        Debug.Log($"Found {modulars.Length} ModularWeapon(s) for spread buff");
+
         foreach (var w in modulars)
         {
-            w.spreadAngle = w.spreadAngle * 0.7f; // reduce by 30%
-        }
-
-        var generals = player.GetComponentsInChildren<GeneralWeapon>(true);
-        foreach (var gw in generals)
-        {
-            // GeneralWeapon exposes BuffSpread(float reduction) which subtracts degrees.
-            // Use reflection to read private spreadAngle if necessary, otherwise attempt a best-effort call.
-            FieldInfo fi = typeof(GeneralWeapon).GetField("spreadAngle", BindingFlags.NonPublic | BindingFlags.Instance);
-            if (fi != null)
-            {
-                float cur = (float)fi.GetValue(gw);
-                float reduction = cur * 0.3f;
-                gw.BuffSpread(reduction);
-            }
-            else
-            {
-                // fallback: attempt to reduce by an assumed amount (not ideal)
-                gw.BuffSpread(3f);
-            }
+            w.ReduceSpreadPercent(0.3f);
         }
     }
 }
