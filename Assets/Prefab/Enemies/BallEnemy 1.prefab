@@ -42,6 +42,7 @@ GameObject:
   - component: {fileID: 6962082424049450652}
   - component: {fileID: 2141677437445380285}
   - component: {fileID: 194917538372712878}
+  - component: {fileID: 6561072718160948043}
   - component: {fileID: 3318267515465241664}
   - component: {fileID: 453046278621456532}
   m_Layer: 0
@@ -130,6 +131,20 @@ MonoBehaviour:
   defaultKnockbackRecovery: 0.6
   maxAllowedKnockbackSpeed: 15
   WeaponSockets: []
+--- !u!114 &6561072718160948043
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3235534787794620987}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98e55d31525395744baa869ca6080603, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  CutCascades: 1
+  ExplodeForce: 0
 --- !u!136 &3318267515465241664
 CapsuleCollider:
   m_ObjectHideFlags: 0
