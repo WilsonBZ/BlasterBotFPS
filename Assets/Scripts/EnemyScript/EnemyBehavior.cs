@@ -271,7 +271,12 @@ public class Enemy : BaseEnemy, IDamageable
         }
     }
 
-    private void HandleDeadState() { }
+    private void HandleDeadState()
+    {
+        if(isExploded) return;
+        Die();
+        
+    }
 
     private void TransitionToState(EnemyState newState)
     {
