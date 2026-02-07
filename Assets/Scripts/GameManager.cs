@@ -23,6 +23,9 @@ public class GameManager : MonoBehaviour
     public bool IsPaused { get; private set; }
     public bool IsGameOver { get; private set; }
 
+    private PlayerMovement playerMovement;
+    private MouseMovement playerMouse;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -48,7 +51,18 @@ public class GameManager : MonoBehaviour
             buffMenu = FindFirstObjectByType<BuffMenu>();
         }
 
+        CachePlayerComponents();
+
         Application.targetFrameRate = 60;
+    }
+
+    private void CachePlayerComponents()
+    {
+        if (player != null)
+        {
+            playerMovement = player.GetComponent<PlayerMovement>();
+            playerMouse = player.GetComponentInChildren<MouseMovement>();
+        }
     }
 
     private void OnEnable()
@@ -213,16 +227,14 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        PlayerMovement movement = player.GetComponent<PlayerMovement>();
-        if (movement != null)
+        if (playerMovement != null)
         {
-            movement.enabled = enabled;
+            playerMovement.enabled = enabled;
         }
 
-        MouseMovement mouse = player.GetComponentInChildren<MouseMovement>();
-        if (mouse != null)
+        if (playerMouse != null)
         {
-            mouse.enabled = enabled;
+            playerMouse.enabled = enabled;
         }
     }
 
