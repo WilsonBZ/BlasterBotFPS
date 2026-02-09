@@ -89,4 +89,15 @@ public class PlayerManager : MonoBehaviour, IDamageable
         currentHealth = Mathf.Min(currentHealth + amount, maxHealth);
         OnHealthChanged?.Invoke(GetHealthPercent());
     }
+    
+    public void IncreaseMaxHealth(float amount)
+    {
+        if (isDead)
+        {
+            return;
+        }
+        
+        maxHealth += amount;
+        OnHealthChanged?.Invoke(GetHealthPercent());
+    }
 }

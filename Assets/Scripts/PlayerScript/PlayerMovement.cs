@@ -5,8 +5,8 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private GameObject zooming_Effect;
 
     [Header("Movement Settings")]
-    [SerializeField] private float walkSpeed = 7f;
-    [SerializeField] private float runSpeed = 12f;
+    public float walkSpeed = 7f;
+    public float runSpeed = 12f;
     [SerializeField] private float groundAcceleration = 50f;
     [SerializeField] private float friction = 12f;
 
