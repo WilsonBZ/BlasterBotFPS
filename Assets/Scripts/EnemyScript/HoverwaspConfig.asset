@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 719de01ba98192d4eb4d817a605bce86, type: 3}
+  m_Name: HoverwaspConfig
+  m_EditorClassIdentifier: 
+  isRanged: 1
+  preferredDistance: 8
+  fireCooldown: 1.2
+  projectilePrefab: {fileID: 8184155314046719719, guid: ae6f733ff470385429cb9dd18b79b0cf, type: 3}
+  canExplode: 0
+  explosionRange: 2
+  explosionDamage: 0
+  explosionForce: 0
+  maxHealth: 60
+  moveSpeed: 4
+  acceleration: 6
+  detectionRange: 15
+  chaseRange: 25
+  fleeDistance: 5
+  fleeDuration: 2
+  fleeOnHit: 0
+  attackDamage: 0
+  attackRange: 0
+  attackRadius: 0
+  attackCooldown: 1.2
+  deathCleanupTime: 3

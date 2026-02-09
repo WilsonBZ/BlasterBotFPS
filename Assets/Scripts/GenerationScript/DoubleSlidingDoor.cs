@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 
 public class SlidingDoubleDoor : MonoBehaviour
 {
@@ -18,6 +19,10 @@ public class SlidingDoubleDoor : MonoBehaviour
     public float doorSpeed = 4f;
     public Transform player;
 
+    [Header("Lock Settings")]
+    [Tooltip("If true, door will not open even when player is nearby")]
+    public bool isLocked = false;
+
     private bool isOpen = false;
 
     [Header("Wave Spawner Trigger")]
@@ -27,6 +32,9 @@ public class SlidingDoubleDoor : MonoBehaviour
 
     private bool prevIsOpen = false;
     private bool hasTriggered = false;
+
+    public event Action<SlidingDoubleDoor> OnDoorOpened;
+    public event Action<SlidingDoubleDoor> OnDoorClosed;
 
     void Start()
     {
@@ -41,18 +49,24 @@ public class SlidingDoubleDoor : MonoBehaviour
 
         float dist = Vector3.Distance(player.position, transform.position);
 
-        if (dist < openDistance)
+        if (!isLocked && dist < openDistance)
             isOpen = true;
         else
             isOpen = false;
 
         if (isOpen && !prevIsOpen)
         {
+            OnDoorOpened?.Invoke(this);
+
             if (triggerOnOpen && waveSpawner != null && (!triggerOnce || !hasTriggered))
             {
                 waveSpawner.StartWaves();
                 hasTriggered = true;
             }
+        }
+        else if (!isOpen && prevIsOpen)
+        {
+            OnDoorClosed?.Invoke(this);
         }
 
         prevIsOpen = isOpen;
@@ -72,5 +86,15 @@ public class SlidingDoubleDoor : MonoBehaviour
             leftDoor.localPosition = Vector3.Lerp(leftDoor.localPosition, leftClosedPos, Time.deltaTime * doorSpeed);
             rightDoor.localPosition = Vector3.Lerp(rightDoor.localPosition, rightClosedPos, Time.deltaTime * doorSpeed);
         }
+    }
+
+    public void Lock()
+    {
+        isLocked = true;
+    }
+
+    public void Unlock()
+    {
+        isLocked = false;
     }
 }

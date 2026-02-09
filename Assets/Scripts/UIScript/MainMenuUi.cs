@@ -5,7 +5,7 @@ public class MainMenuUI : MonoBehaviour
 {
     public void StartGame()
     {
-        SceneManager.LoadScene("Tutorial");
+        SceneManager.LoadScene("CoreLoop");
     }
 
     // Called by Quit button

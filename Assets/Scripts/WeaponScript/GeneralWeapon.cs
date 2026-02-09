@@ -140,7 +140,8 @@ public class GeneralWeapon : MonoBehaviour
             crosshair.sizeDelta = new Vector2(currentCrosshairSize, currentCrosshairSize);
         }
 
-        StartCoroutine(ScreenShake(0.3f, 0.15f));
+        // Screen shake disabled - remove the comment below to re-enable
+        // StartCoroutine(ScreenShake(0.3f, 0.15f));
     }
 
 

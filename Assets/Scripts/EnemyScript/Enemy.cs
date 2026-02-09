@@ -428,8 +428,10 @@ public class Enemy : BaseEnemy, IDamageable
 
         if (deathEffect != null)
         {
-            Instantiate(deathEffect, transform.position, Quaternion.identity);
+           
         }
+        
+       
 
         float cleanupTime = config != null ? config.deathCleanupTime : 3f;
         Destroy(gameObject, cleanupTime);
@@ -455,8 +457,11 @@ public class Enemy : BaseEnemy, IDamageable
         GameObject effect = config != null && config.canExplode ? deathEffect : deathEffect;
         if (effect != null)
         {
-            Instantiate(effect, transform.position, Quaternion.identity);
+            GameObject explosion = Instantiate(effect, transform.position, Quaternion.identity);
+            
         }
+        
+        
 
         if (config != null && config.canExplode)
         {

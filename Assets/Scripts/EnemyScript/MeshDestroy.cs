@@ -23,10 +23,13 @@ public class MeshDestroy : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetMouseButtonDown(0))
-        {
-            DestroyMesh();
-        }
+        // DISABLED: This was causing enemies to duplicate on every left click
+        // Remove the MeshDestroy component from enemies if you don't need mesh destruction
+        
+        // if (Input.GetMouseButtonDown(0))
+        // {
+        //     DestroyMesh();
+        // }
     }
 
     private void DestroyMesh()
