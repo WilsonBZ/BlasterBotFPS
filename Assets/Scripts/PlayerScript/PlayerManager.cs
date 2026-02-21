@@ -45,6 +45,11 @@ public class PlayerManager : MonoBehaviour, IDamageable
         }
     }
 
+    public void TakeDamage(float amount, Vector3 hitPoint, Vector3 hitDirection)
+    {
+        TakeDamage(amount);
+    }
+
     public float GetHealthPercent()
     {
         if (maxHealth <= 0f)

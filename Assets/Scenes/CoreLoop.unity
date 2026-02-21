@@ -9287,6 +9287,30 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 453046278621456532, guid: 21c6f957c2ecffb468515fdf37982de5, type: 3}
+      propertyPath: m_Constraints
+      value: 112
+      objectReference: {fileID: 0}
+    - target: {fileID: 453046278621456532, guid: 21c6f957c2ecffb468515fdf37982de5, type: 3}
+      propertyPath: m_Interpolate
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 453046278621456532, guid: 21c6f957c2ecffb468515fdf37982de5, type: 3}
+      propertyPath: m_CollisionDetection
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1976021738845865437, guid: 21c6f957c2ecffb468515fdf37982de5, type: 3}
+      propertyPath: flashDuration
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1976021738845865437, guid: 21c6f957c2ecffb468515fdf37982de5, type: 3}
+      propertyPath: flashCurve.m_Curve.Array.data[1].inSlope
+      value: -10
+      objectReference: {fileID: 0}
+    - target: {fileID: 1976021738845865437, guid: 21c6f957c2ecffb468515fdf37982de5, type: 3}
+      propertyPath: flashCurve.m_Curve.Array.data[0].outSlope
+      value: -10
+      objectReference: {fileID: 0}
     - target: {fileID: 3235534787794620987, guid: 21c6f957c2ecffb468515fdf37982de5, type: 3}
       propertyPath: m_Name
       value: BallEnemy 1 (1)

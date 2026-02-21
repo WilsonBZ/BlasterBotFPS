@@ -47,6 +47,7 @@ GameObject:
   - component: {fileID: 453046278621456532}
   - component: {fileID: 7924974133882516988}
   - component: {fileID: 7840433988009612692}
+  - component: {fileID: 1976021738845865437}
   m_Layer: 0
   m_Name: BallEnemy 1
   m_TagString: Untagged
@@ -117,22 +118,15 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 128
   spawner: {fileID: 0}
-  materialRenderers: []
   deathEffect: {fileID: 5289173458515104635, guid: 0f073673bec7b6c448431b334dd87d68, type: 3}
   damageNumberPrefab: {fileID: 0}
   numberOffset: {x: 0, y: 1.5, z: 0}
-  explosionRange: 5
-  explosionDamage: 150
-  explosionEffect: {fileID: 5289173458515104635, guid: 0f073673bec7b6c448431b334dd87d68, type: 3}
-  explosionForce: 20
-  selfDestructDelay: 0.5
+  defaultKnockbackRecovery: 0.6
+  maxAllowedKnockbackSpeed: 15
+  knockbackForceMultiplier: 3
   hitSlowMultiplier: 0.5
   hitSlowDuration: 0.8
   hitSlowRestoreSmoothTime: 0.15
-  animator: {fileID: 6911749554433352754}
-  defaultKnockbackRecovery: 0.6
-  maxAllowedKnockbackSpeed: 15
-  WeaponSockets: []
 --- !u!114 &6561072718160948043
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -250,6 +244,46 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &1976021738845865437
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3235534787794620987}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 619332873e161b5429deca117e0b76fd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  flashColor: {r: 1, g: 1, b: 1, a: 1}
+  flashDuration: 2
+  flashCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  emissionProperty: _EmissionColor
+  useEmission: 1
 --- !u!1001 &1045365286254303651
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -317,10 +351,5 @@ PrefabInstance:
 --- !u!4 &651714957574618696 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: a69ca3f0c0c71024a9287265532c35a7, type: 3}
-  m_PrefabInstance: {fileID: 1045365286254303651}
-  m_PrefabAsset: {fileID: 0}
---- !u!95 &6911749554433352754 stripped
-Animator:
-  m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: a69ca3f0c0c71024a9287265532c35a7, type: 3}
   m_PrefabInstance: {fileID: 1045365286254303651}
   m_PrefabAsset: {fileID: 0}

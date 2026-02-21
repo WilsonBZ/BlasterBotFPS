@@ -70,8 +70,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a4eac2f2ed4ab246a1a7ba283a210cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  pellets: 1
-  spreadAngle: 0
+  basePellets: 8
+  baseSpreadAngle: 6
   fireRate: 1
   energyCostPerShot: 20
   firePoint: {fileID: 4956853478213352524}
@@ -340,7 +340,7 @@ MonoBehaviour:
         ResetTargetValuesAfterShake: 1
         OnlyBroadcastInRange: 0
         EventRange: 100
-        EventOriginTransform: {fileID: 0}
+        EventOriginTransform: {fileID: 642425288920614078}
         AllowAdditivePlays: 0
         ModifyColor: 1
         ColorOverTime:
@@ -5420,7 +5420,7 @@ Light:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6142428132710681379}
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 11
   m_Type: 2
   m_Color: {r: 1, g: 0.65916854, b: 0, a: 1}
@@ -5654,7 +5654,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7802194415811643267}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
+  m_LocalRotation: {x: -0.006401359, y: 0.70707786, z: 0.006401359, w: 0.70707786}
   m_LocalPosition: {x: 0.004000008, y: -0.006, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0

@@ -36,9 +36,10 @@ public class HoverwaspAI : BaseEnemy, IDamageable
     [SerializeField] private GameObject damageNumberPrefab;
     [SerializeField] private Vector3 numberOffset = new Vector3(0, 1f, 0);
 
-    [Header("Knockback / Stun")]
-    [SerializeField] private float defaultKnockbackRecovery = 0.4f;
-    [SerializeField] private float maxAllowedKnockbackSpeed = 12f;
+    [Header("Hit Feedback")]
+    [SerializeField] private float knockbackForceMultiplier = 2f;
+    [SerializeField] private float knockbackRecoveryTime = 0.4f;
+    [SerializeField] private float maxKnockbackSpeed = 12f;
 
     private Slider healthSlider;
     private GameObject healthBarInstance;
@@ -54,6 +55,7 @@ public class HoverwaspAI : BaseEnemy, IDamageable
     private Vector3 strafeDirection;
     private float strafeTimer;
     private float preferredDistance;
+    private HitFlashEffect hitFlashEffect;
 
     private void Awake()
     {
@@ -64,6 +66,13 @@ public class HoverwaspAI : BaseEnemy, IDamageable
 
     private void InitializeComponents()
     {
+        hitFlashEffect = GetComponent<HitFlashEffect>();
+        
+        if (hitFlashEffect == null)
+        {
+            hitFlashEffect = gameObject.AddComponent<HitFlashEffect>();
+        }
+
         player = FindFirstObjectByType<PlayerManager>();
         if (player == null)
         {
@@ -346,6 +355,11 @@ public class HoverwaspAI : BaseEnemy, IDamageable
         currentHealth -= damage;
         UpdateHealthBar();
 
+        if (hitFlashEffect != null)
+        {
+            hitFlashEffect.Flash();
+        }
+
         if (currentHealth <= 0)
         {
             Die();
@@ -354,16 +368,51 @@ public class HoverwaspAI : BaseEnemy, IDamageable
         ShowDamageNumber(damage);
     }
 
-    public void ApplyKnockback(Vector3 impulse, float damage = 0f, float stunDuration = -1f)
+    public void TakeDamage(float damage, Vector3 hitPoint, Vector3 hitDirection)
     {
         if (isExploded) return;
 
-        if (stunDuration <= 0f) stunDuration = defaultKnockbackRecovery;
+        currentHealth -= damage;
+        UpdateHealthBar();
 
-        if (impulse.magnitude > maxAllowedKnockbackSpeed)
-            impulse = impulse.normalized * maxAllowedKnockbackSpeed;
+        if (hitFlashEffect != null)
+        {
+            hitFlashEffect.Flash();
+        }
 
-        if (damage > 0f) TakeDamage(damage);
+        Vector3 knockbackImpulse = hitDirection.normalized * knockbackForceMultiplier;
+        ApplyKnockback(knockbackImpulse, knockbackRecoveryTime);
+
+        if (currentHealth <= 0)
+        {
+            Die();
+        }
+
+        ShowDamageNumber(damage);
+    }
+
+    private void ApplyKnockback(Vector3 impulse, float stunDuration)
+    {
+        if (isExploded) return;
+
+        if (impulse.magnitude > maxKnockbackSpeed)
+        {
+            impulse = impulse.normalized * maxKnockbackSpeed;
+        }
+
+        StartCoroutine(KnockbackCoroutine(impulse, stunDuration));
+    }
+
+    public void ApplyKnockbackWithDamage(Vector3 impulse, float damage, float stunDuration)
+    {
+        if (isExploded) return;
+
+        TakeDamage(damage);
+
+        if (impulse.magnitude > maxKnockbackSpeed)
+        {
+            impulse = impulse.normalized * maxKnockbackSpeed;
+        }
 
         StartCoroutine(KnockbackCoroutine(impulse, stunDuration));
     }
@@ -375,17 +424,15 @@ public class HoverwaspAI : BaseEnemy, IDamageable
 
         rb.AddForce(impulse, ForceMode.Impulse);
 
-        float elapsed = 0f;
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
+        yield return new WaitForSeconds(duration);
 
         rb.linearVelocity *= 0.5f;
         isKnockedBack = false;
 
-        if (!isExploded) currentState = HoverwaspState.Combat;
+        if (!isExploded)
+        {
+            currentState = HoverwaspState.Combat;
+        }
     }
 
     private void Die()

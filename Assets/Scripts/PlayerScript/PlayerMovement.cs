@@ -265,7 +265,7 @@ public class PlayerMovement : MonoBehaviour
         Vector3 impulse = horizontalVelocity.normalized * horizontalVelocity.magnitude * GameConstants.DASH_KNOCKBACK_MULTIPLIER;
         impulse.y = Mathf.Max(GameConstants.DASH_KNOCKBACK_VERTICAL_LIFT, horizontalVelocity.magnitude * 0.25f);
 
-        enemy.ApplyKnockback(impulse, GameConstants.DASH_DAMAGE, GameConstants.DASH_KNOCKBACK_DURATION);
+        enemy.ApplyKnockbackWithDamage(impulse, GameConstants.DASH_DAMAGE, GameConstants.DASH_KNOCKBACK_DURATION);
     }
 
     private void StopSlide()

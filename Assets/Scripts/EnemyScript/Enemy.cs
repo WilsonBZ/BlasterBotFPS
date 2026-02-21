@@ -27,11 +27,10 @@ public class Enemy : BaseEnemy, IDamageable
     [SerializeField] private GameObject damageNumberPrefab;
     [SerializeField] private Vector3 numberOffset = new Vector3(0, 1.5f, 0);
 
-    [Header("Knockback / Stun")]
-    [SerializeField] private float defaultKnockbackRecovery = 0.6f;
-    [SerializeField] private float maxAllowedKnockbackSpeed = 15f;
-
-    [Header("Hit Slowdown")]
+    [Header("Hit Feedback")]
+    [SerializeField] private float knockbackForceMultiplier = 3f;
+    [SerializeField] private float knockbackRecoveryTime = 0.3f;
+    [SerializeField] private float maxKnockbackSpeed = 15f;
     [Tooltip("Multiplier applied to move speed when hit (0.5 = 50% speed)")]
     [SerializeField] private float hitSlowMultiplier = 0.5f;
     [Tooltip("How long the slowdown lasts (seconds)")]
@@ -55,6 +54,7 @@ public class Enemy : BaseEnemy, IDamageable
     private float originalMoveSpeed;
     private float runtimeMoveSpeed;
     private Coroutine slowCoroutine;
+    private HitFlashEffect hitFlashEffect;
 
     private readonly int animMoveSpeed = Animator.StringToHash("MoveSpeed");
     private readonly int animAttack = Animator.StringToHash("Attack");
@@ -71,6 +71,12 @@ public class Enemy : BaseEnemy, IDamageable
     private void InitializeComponents()
     {
         animator = GetComponent<Animator>();
+        hitFlashEffect = GetComponent<HitFlashEffect>();
+        
+        if (hitFlashEffect == null)
+        {
+            hitFlashEffect = gameObject.AddComponent<HitFlashEffect>();
+        }
 
         player = FindFirstObjectByType<PlayerManager>();
         if (player == null)
@@ -285,6 +291,11 @@ public class Enemy : BaseEnemy, IDamageable
         currentHealth -= damage;
         UpdateHealthBar();
 
+        if (hitFlashEffect != null)
+        {
+            hitFlashEffect.Flash();
+        }
+
         if (currentHealth <= 0)
         {
             Die();
@@ -299,6 +310,37 @@ public class Enemy : BaseEnemy, IDamageable
 
         ShowDamageNumber(damage);
 
+        StartHitSlowdown();
+    }
+
+    public void TakeDamage(float damage, Vector3 hitPoint, Vector3 hitDirection)
+    {
+        if (isExploded) return;
+
+        currentHealth -= damage;
+        UpdateHealthBar();
+
+        if (hitFlashEffect != null)
+        {
+            hitFlashEffect.Flash();
+        }
+
+        Vector3 knockbackImpulse = hitDirection.normalized * knockbackForceMultiplier;
+        ApplyKnockback(knockbackImpulse, knockbackRecoveryTime);
+
+        if (currentHealth <= 0)
+        {
+            Die();
+        }
+        else
+        {
+            if (config != null && config.fleeOnHit)
+            {
+                StartCoroutine(FleeBehavior());
+            }
+        }
+
+        ShowDamageNumber(damage);
         StartHitSlowdown();
     }
 
@@ -342,16 +384,28 @@ public class Enemy : BaseEnemy, IDamageable
         slowCoroutine = null;
     }
 
-    public void ApplyKnockback(Vector3 impulse, float damage = 0f, float stunDuration = -1f)
+    private void ApplyKnockback(Vector3 impulse, float stunDuration)
     {
         if (isExploded) return;
 
-        if (stunDuration <= 0f) stunDuration = defaultKnockbackRecovery;
+        if (impulse.magnitude > maxKnockbackSpeed)
+        {
+            impulse = impulse.normalized * maxKnockbackSpeed;
+        }
 
-        if (impulse.magnitude > maxAllowedKnockbackSpeed)
-            impulse = impulse.normalized * maxAllowedKnockbackSpeed;
+        StartCoroutine(KnockbackCoroutine(impulse, stunDuration));
+    }
 
-        if (damage > 0f) TakeDamage(damage);
+    public void ApplyKnockbackWithDamage(Vector3 impulse, float damage, float stunDuration)
+    {
+        if (isExploded) return;
+
+        TakeDamage(damage);
+
+        if (impulse.magnitude > maxKnockbackSpeed)
+        {
+            impulse = impulse.normalized * maxKnockbackSpeed;
+        }
 
         StartCoroutine(KnockbackCoroutine(impulse, stunDuration));
     }
@@ -361,26 +415,19 @@ public class Enemy : BaseEnemy, IDamageable
         if (isKnockedBack) yield break;
         isKnockedBack = true;
 
-        rb.isKinematic = false;
-        rb.linearVelocity = Vector3.zero;
-
         rb.AddForce(impulse, ForceMode.Impulse);
 
-        float elapsed = 0f;
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
+        yield return new WaitForSeconds(duration);
 
         rb.linearVelocity = Vector3.zero;
-
         rb.angularVelocity = Vector3.zero;
-        rb.isKinematic = false; 
 
         isKnockedBack = false;
 
-        if (!isExploded) TransitionToState(EnemyState.Chase);
+        if (!isExploded)
+        {
+            TransitionToState(EnemyState.Chase);
+        }
     }
 
     private void Attack()

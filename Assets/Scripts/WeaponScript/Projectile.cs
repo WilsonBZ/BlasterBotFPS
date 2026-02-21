@@ -60,7 +60,8 @@ public class Projectile : MonoBehaviour
 
         if (damageable != null)
         {
-            damageable.TakeDamage(damage);
+            Vector3 hitDirection = transform.forward;
+            damageable.TakeDamage(damage, hit.point, hitDirection);
             SpawnEffect(impactEffect, hit.point, hit.normal);
         }
         else
@@ -80,8 +81,10 @@ public class Projectile : MonoBehaviour
 
         if (damageable != null)
         {
-            damageable.TakeDamage(damage);
-            SpawnEffect(impactEffect, collision.contacts[0].point, collision.contacts[0].normal);
+            Vector3 hitDirection = transform.forward;
+            Vector3 hitPoint = collision.contacts[0].point;
+            damageable.TakeDamage(damage, hitPoint, hitDirection);
+            SpawnEffect(impactEffect, hitPoint, collision.contacts[0].normal);
         }
         else
         {
