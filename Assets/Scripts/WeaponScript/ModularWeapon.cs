@@ -24,6 +24,7 @@ public class ModularWeapon : MonoBehaviour
     public MMF_Player muzzleFlash;
     public AudioSource audioSource;
     public AudioClip shootSound;
+    [SerializeField] private float pitchVariation = 0.1f;
 
     [Header("Recoil")]
     [Tooltip("Vertical recoil applied per shot (degrees)")]
@@ -43,6 +44,7 @@ public class ModularWeapon : MonoBehaviour
     // ===== Runtime =====
     private float lastShotTime = -999f;
     public bool IsCenter { get; private set; } = false;
+    private int fireSoundIndex;
 
     ArmMount360 parentMount = null;
     int parentSlotIndex = -1;
@@ -123,7 +125,14 @@ public class ModularWeapon : MonoBehaviour
     protected virtual void FireInternal(Camera playerCamera)
     {
         if (muzzleFlash) muzzleFlash.PlayFeedbacks();
-        if (audioSource && shootSound) audioSource.PlayOneShot(shootSound);
+        
+        if (audioSource && shootSound)
+        {
+            float pitch = 1f + (fireSoundIndex % 2 == 0 ? -pitchVariation : pitchVariation);
+            audioSource.pitch = pitch;
+            audioSource.PlayOneShot(shootSound);
+            fireSoundIndex++;
+        }
 
         ApplyRecoil();
 
@@ -165,7 +174,14 @@ public class ModularWeapon : MonoBehaviour
     public void FireAtPoint(Vector3 aimPoint)
     {
         if (muzzleFlash) muzzleFlash.PlayFeedbacks();
-        if (audioSource && shootSound) audioSource.PlayOneShot(shootSound);
+        
+        if (audioSource && shootSound)
+        {
+            float pitch = 1f + (fireSoundIndex % 2 == 0 ? -pitchVariation : pitchVariation);
+            audioSource.pitch = pitch;
+            audioSource.PlayOneShot(shootSound);
+            fireSoundIndex++;
+        }
 
         ApplyRecoil();
 

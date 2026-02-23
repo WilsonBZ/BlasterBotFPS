@@ -37,10 +37,13 @@ public class PlayerManager : MonoBehaviour, IDamageable
         currentHealth -= amount;
         lastDamageTime = Time.time;
 
+        Debug.Log($"PlayerManager: TakeDamage({amount}), Health: {currentHealth}/{maxHealth}");
+
         OnHealthChanged?.Invoke(GetHealthPercent());
 
         if (currentHealth <= 0f)
         {
+            Debug.Log("PlayerManager: Health <= 0, calling Die()");
             Die();
         }
     }
@@ -68,20 +71,26 @@ public class PlayerManager : MonoBehaviour, IDamageable
         }
 
         isDead = true;
+        
+        Debug.Log("PlayerManager: Die() called - Player is dead!");
 
         PlayerMovement movement = GetComponent<PlayerMovement>();
         if (movement != null)
         {
             movement.enabled = false;
+            Debug.Log("PlayerManager: Disabled PlayerMovement");
         }
 
         MouseMovement mouse = GetComponentInChildren<MouseMovement>();
         if (mouse != null)
         {
             mouse.enabled = false;
+            Debug.Log("PlayerManager: Disabled MouseMovement");
         }
 
+        Debug.Log($"PlayerManager: Invoking OnDeath event. Subscribers: {OnDeath?.GetInvocationList()?.Length ?? 0}");
         OnDeath?.Invoke();
+        Debug.Log("PlayerManager: OnDeath event invoked");
     }
 
     public void Heal(float amount)

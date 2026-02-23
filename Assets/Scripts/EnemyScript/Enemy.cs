@@ -22,6 +22,7 @@ public class Enemy : BaseEnemy, IDamageable
 
     [Header("Visuals")]
     [SerializeField] private GameObject deathEffect;
+    [SerializeField] private ExplosionFeedback explosionFeedback;
 
     [Header("Damage Numbers")]
     [SerializeField] private GameObject damageNumberPrefab;
@@ -122,7 +123,7 @@ public class Enemy : BaseEnemy, IDamageable
 
         isGrounded = Physics.CheckSphere(transform.position + groundCheckOffset, groundCheckRadius, groundMask);
 
-        if (config != null && config.canExplode && Vector3.Distance(transform.position, player.transform.position) <= config.explosionRange)
+        if (config != null && config.canExplode && Vector3.Distance(transform.position, player.transform.position) <= config.explosionTriggerRange)
         {
             StartCoroutine(Explode());
             return;
@@ -501,14 +502,18 @@ public class Enemy : BaseEnemy, IDamageable
         float delay = config != null && config.canExplode ? 0.5f : 0.5f;
         yield return new WaitForSeconds(delay);
 
+        Vector3 explosionPosition = transform.position;
+
+        if (explosionFeedback != null)
+        {
+            explosionFeedback.TriggerExplosion(explosionPosition);
+        }
+
         GameObject effect = config != null && config.canExplode ? deathEffect : deathEffect;
         if (effect != null)
         {
-            GameObject explosion = Instantiate(effect, transform.position, Quaternion.identity);
-            
+            GameObject explosion = Instantiate(effect, explosionPosition, Quaternion.identity);
         }
-        
-        
 
         if (config != null && config.canExplode)
         {
@@ -533,7 +538,7 @@ public class Enemy : BaseEnemy, IDamageable
 
     private void ApplyExplosionDamage()
     {
-        float range = config.explosionRange;
+        float range = config.explosionDamageRadius;
         float damage = config.explosionDamage;
         float force = config.explosionForce;
 
@@ -612,6 +617,15 @@ public class Enemy : BaseEnemy, IDamageable
         {
             Gizmos.color = Color.magenta;
             Gizmos.DrawWireSphere(attackPoint.position, config != null ? config.attackRadius : 1f);
+        }
+
+        if (config != null && config.canExplode)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(transform.position, config.explosionTriggerRange);
+            
+            Gizmos.color = new Color(1f, 0.5f, 0f, 0.3f);
+            Gizmos.DrawWireSphere(transform.position, config.explosionDamageRadius);
         }
     }
 

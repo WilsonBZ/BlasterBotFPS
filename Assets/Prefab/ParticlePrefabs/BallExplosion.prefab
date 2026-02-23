@@ -1,0 +1,64 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2718306287638060628
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8849114179411922487}
+  - component: {fileID: 5118083722360955533}
+  m_Layer: 0
+  m_Name: BallExplosion
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8849114179411922487
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2718306287638060628}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5118083722360955533
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2718306287638060628}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a19a0a6e903e0b54c93099af4574179a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  coreExplosion: {fileID: 5289173458515104635, guid: 0f073673bec7b6c448431b334dd87d68, type: 3}
+  flashEffect: {fileID: 5289173458515104635, guid: 0f073673bec7b6c448431b334dd87d68, type: 3}
+  smokeEffect: {fileID: 0}
+  spawnShockwave: 1
+  shockwaveMaxScale: 8
+  shockwaveSpeed: 20
+  shockwaveColor: {r: 1, g: 0.5, b: 0, a: 0.7}
+  spawnLight: 1
+  lightColor: {r: 1, g: 0.6, b: 0.2, a: 1}
+  lightIntensity: 15
+  lightRange: 15
+  lightDuration: 0.4
+  spawnDebris: 1
+  debrisPrefab: {fileID: 7436080875888573586, guid: cce3851f4d9bd6a409ee636057929041, type: 3}
+  debrisCount: 12
+  debrisForce: 8
+  debrisLifetime: 2
+  totalLifetime: 3

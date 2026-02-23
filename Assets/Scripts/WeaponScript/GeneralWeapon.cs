@@ -33,9 +33,9 @@ public class GeneralWeapon : MonoBehaviour
     [SerializeField] private ParticleSystem muzzleFlash;
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip shootSound;
+    [SerializeField] private float pitchVariation = 0.1f;
 
     public bool applyRecoil = true;
-    //public SidegunManager sidegunManager;
     public bool isMainGun = true;
     private int currentAmmo;
     private float nextFireTime;
@@ -43,6 +43,7 @@ public class GeneralWeapon : MonoBehaviour
     private Quaternion originalWeaponRotation;
     private float currentRecoil;
     private float currentCrosshairSize;
+    private int fireSoundIndex;
 
 
     private void Awake()
@@ -86,7 +87,14 @@ public class GeneralWeapon : MonoBehaviour
         currentAmmo--;
 
         if (muzzleFlash) muzzleFlash.Play();
-        if (audioSource && shootSound) audioSource.PlayOneShot(shootSound);
+        
+        if (audioSource && shootSound)
+        {
+            float pitch = 1f + (fireSoundIndex % 2 == 0 ? -pitchVariation : pitchVariation);
+            audioSource.pitch = pitch;
+            audioSource.PlayOneShot(shootSound);
+            fireSoundIndex++;
+        }
 
         Ray aimRay = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
         Vector3 perfectForward = aimRay.direction;

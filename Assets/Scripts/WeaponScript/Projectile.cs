@@ -14,12 +14,23 @@ public class Projectile : MonoBehaviour
 
     [Header("Effects")]
     [SerializeField] private GameObject spawnEffect;
-    [SerializeField] private GameObject nonDamageEffect;
-    [SerializeField] private GameObject impactEffect;
+    [SerializeField] private GameObject impactSphere;
     [SerializeField] private TrailRenderer trail;
     [SerializeField] private float hitStopDuration = 0.03f;
+    
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip fireSound;
 
     private Rigidbody rb;
+    
+    public void SetPitch(float pitch)
+    {
+        if (audioSource != null)
+        {
+            audioSource.pitch = pitch;
+        }
+    }
 
     private void Awake()
     {
@@ -33,8 +44,10 @@ public class Projectile : MonoBehaviour
     {
         rb.linearVelocity = transform.forward * Speed;
 
-        // Spawn muzzle/launch VFX
-        SpawnEffect(spawnEffect, transform.position, transform.forward);
+        if (audioSource != null && fireSound != null)
+        {
+            audioSource.PlayOneShot(fireSound);
+        }
     }
 
     private void Update()
@@ -62,12 +75,9 @@ public class Projectile : MonoBehaviour
         {
             Vector3 hitDirection = transform.forward;
             damageable.TakeDamage(damage, hit.point, hitDirection);
-            SpawnEffect(impactEffect, hit.point, hit.normal);
         }
-        else
-        {
-            SpawnEffect(nonDamageEffect, hit.point, hit.normal);
-        }
+        
+        SpawnImpactSphere(hit.point);
 
         StartCoroutine(DestroyTrail());
         Destroy(gameObject);
@@ -84,12 +94,26 @@ public class Projectile : MonoBehaviour
             Vector3 hitDirection = transform.forward;
             Vector3 hitPoint = collision.contacts[0].point;
             damageable.TakeDamage(damage, hitPoint, hitDirection);
-            SpawnEffect(impactEffect, hitPoint, collision.contacts[0].normal);
         }
-        else
+        
+        SpawnImpactSphere(collision.contacts[0].point);
+
+        StartCoroutine(DestroyTrail());
+        Destroy(gameObject);
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        IDamageable damageable = other.GetComponent<IDamageable>();
+
+        if (damageable != null)
         {
-            SpawnEffect(nonDamageEffect, collision.contacts[0].point, collision.contacts[0].normal);
+            Vector3 hitDirection = transform.forward;
+            Vector3 hitPoint = other.ClosestPoint(transform.position);
+            damageable.TakeDamage(damage, hitPoint, hitDirection);
         }
+        
+        SpawnImpactSphere(other.ClosestPoint(transform.position));
 
         StartCoroutine(DestroyTrail());
         Destroy(gameObject);
@@ -119,20 +143,11 @@ public class Projectile : MonoBehaviour
         yield return null;
     }
 
-    private void SpawnEffect(GameObject effect, Vector3 position, Vector3 normal)
+    private void SpawnImpactSphere(Vector3 position)
     {
-        if (!effect) return;
-
-        GameObject vfx = Instantiate(effect, position, Quaternion.LookRotation(normal));
-
-        ParticleSystem ps = vfx.GetComponent<ParticleSystem>();
-        if (ps != null)
+        if (impactSphere != null)
         {
-            Destroy(vfx, ps.main.duration + ps.main.startLifetime.constantMax);
-        }
-        else
-        {
-            Destroy(vfx, 2f);
+            Instantiate(impactSphere, position, Quaternion.identity);
         }
     }
 }

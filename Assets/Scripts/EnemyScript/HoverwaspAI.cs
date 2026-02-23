@@ -14,6 +14,14 @@ public class HoverwaspAI : BaseEnemy, IDamageable
     [SerializeField] private float hoverDamping = 5f;
     [SerializeField] private float heightCheckDistance = 10f;
     [SerializeField] private LayerMask groundMask;
+    [SerializeField] private float verticalVariationSpeed = 1f;
+    [SerializeField] private float verticalVariationAmount = 1.5f;
+    [SerializeField] private float verticalChangeInterval = 3f;
+    
+    [Header("Proximity Avoidance")]
+    [SerializeField] private float proximityCheckRadius = 3f;
+    [SerializeField] private float verticalSeparationForce = 5f;
+    [SerializeField] private float minVerticalSeparation = 2f;
 
     [Header("Combat")]
     [SerializeField] private Transform firePoint;
@@ -56,6 +64,9 @@ public class HoverwaspAI : BaseEnemy, IDamageable
     private float strafeTimer;
     private float preferredDistance;
     private HitFlashEffect hitFlashEffect;
+    private float targetHoverHeight;
+    private float verticalChangeTimer;
+    private int fireSoundIndex;
 
     private void Awake()
     {
@@ -121,6 +132,7 @@ public class HoverwaspAI : BaseEnemy, IDamageable
         currentHealth = config != null ? config.maxHealth : 50f;
         CreateHealthBar();
         ChooseNewStrafeDirection();
+        targetHoverHeight = hoverHeight + Random.Range(-verticalVariationAmount, verticalVariationAmount);
     }
 
     private void Update()
@@ -129,6 +141,7 @@ public class HoverwaspAI : BaseEnemy, IDamageable
 
         UpdateStateMachine();
         UpdateStrafeTimer();
+        UpdateVerticalVariation();
         UpdateHealthBarPosition();
     }
 
@@ -137,6 +150,7 @@ public class HoverwaspAI : BaseEnemy, IDamageable
         if (player == null || isExploded || isKnockedBack) return;
 
         ApplyHoverForce();
+        ApplyProximityAvoidance();
 
         if (currentState == HoverwaspState.Combat)
         {
@@ -152,7 +166,7 @@ public class HoverwaspAI : BaseEnemy, IDamageable
         if (Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, heightCheckDistance, groundMask))
         {
             float currentHeight = hit.distance;
-            float heightError = hoverHeight - currentHeight;
+            float heightError = targetHoverHeight - currentHeight;
 
             float upForce = heightError * hoverForce;
             upForce -= rb.linearVelocity.y * hoverDamping;
@@ -162,6 +176,39 @@ public class HoverwaspAI : BaseEnemy, IDamageable
         else
         {
             rb.AddForce(Vector3.up * hoverForce * 0.5f, ForceMode.Acceleration);
+        }
+    }
+
+    private void ApplyProximityAvoidance()
+    {
+        Collider[] nearbyEnemies = Physics.OverlapSphere(transform.position, proximityCheckRadius);
+        
+        foreach (Collider col in nearbyEnemies)
+        {
+            if (col.gameObject == gameObject) continue;
+            
+            HoverwaspAI otherWasp = col.GetComponent<HoverwaspAI>();
+            if (otherWasp != null && !otherWasp.isExploded)
+            {
+                float verticalDistance = transform.position.y - otherWasp.transform.position.y;
+                
+                if (Mathf.Abs(verticalDistance) < minVerticalSeparation)
+                {
+                    float separationDirection = verticalDistance >= 0 ? 1f : -1f;
+                    rb.AddForce(Vector3.up * separationDirection * verticalSeparationForce, ForceMode.Acceleration);
+                }
+            }
+        }
+    }
+
+    private void UpdateVerticalVariation()
+    {
+        verticalChangeTimer += Time.deltaTime;
+        
+        if (verticalChangeTimer >= verticalChangeInterval)
+        {
+            targetHoverHeight = hoverHeight + Random.Range(-verticalVariationAmount, verticalVariationAmount);
+            verticalChangeTimer = 0f;
         }
     }
 
@@ -322,7 +369,15 @@ public class HoverwaspAI : BaseEnemy, IDamageable
         Vector3 directionToPlayer = (player.transform.position - firePoint.position).normalized;
         Quaternion projectileRotation = Quaternion.LookRotation(directionToPlayer);
 
-        Instantiate(config.projectilePrefab, firePoint.position, projectileRotation);
+        GameObject projectile = Instantiate(config.projectilePrefab, firePoint.position, projectileRotation);
+        
+        Projectile proj = projectile.GetComponent<Projectile>();
+        if (proj != null)
+        {
+            float pitch = fireSoundIndex % 2 == 0 ? 0.9f : 1.1f;
+            proj.SetPitch(pitch);
+            fireSoundIndex++;
+        }
     }
 
     private bool HasLineOfSightToPlayer()
