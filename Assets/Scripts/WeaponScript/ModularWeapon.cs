@@ -1,5 +1,3 @@
-using MoreMountains.Feedbacks;
-
 using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
@@ -21,7 +19,8 @@ public class ModularWeapon : MonoBehaviour
     public bool useCrosshairWhenCentered = true;
 
     [Header("Effects")]
-    public MMF_Player muzzleFlash;
+    public ParticleSystem muzzleFlash;
+    public MuzzleFlash muzzleFlashVFX;
     public AudioSource audioSource;
     public AudioClip shootSound;
     [SerializeField] private float pitchVariation = 0.1f;
@@ -124,7 +123,8 @@ public class ModularWeapon : MonoBehaviour
 
     protected virtual void FireInternal(Camera playerCamera)
     {
-        if (muzzleFlash) muzzleFlash.PlayFeedbacks();
+        if (muzzleFlash != null) muzzleFlash.Play();
+        if (muzzleFlashVFX != null) muzzleFlashVFX.Play();
         
         if (audioSource && shootSound)
         {
@@ -173,7 +173,8 @@ public class ModularWeapon : MonoBehaviour
 
     public void FireAtPoint(Vector3 aimPoint)
     {
-        if (muzzleFlash) muzzleFlash.PlayFeedbacks();
+        if (muzzleFlash != null) muzzleFlash.Play();
+        if (muzzleFlashVFX != null) muzzleFlashVFX.Play();
         
         if (audioSource && shootSound)
         {

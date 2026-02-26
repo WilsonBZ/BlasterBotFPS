@@ -87,8 +87,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.3, y: 0.5, z: 1.4}
-  m_Center: {x: 0, y: 0.25, z: 0}
+  m_Size: {x: 0.11472359, y: 0.5, z: 1.4}
+  m_Center: {x: -0.09263821, y: 0.25, z: 0}
 --- !u!114 &3289840574416918307
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -109,6 +109,7 @@ MonoBehaviour:
   projectilePrefab: {fileID: 8184155314046719719, guid: ae6f733ff470385429cb9dd18b79b0cf, type: 3}
   useCrosshairWhenCentered: 1
   muzzleFlash: {fileID: 0}
+  muzzleFlashVFX: {fileID: 7976368881733852915}
   audioSource: {fileID: 4488338807715120508}
   shootSound: {fileID: 8300000, guid: 6cd42037ffe32d843806268e0a57b186, type: 3}
   pitchVariation: 0.1
@@ -254,6 +255,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3368762404170974568}
+  - component: {fileID: 7976368881733852915}
   m_Layer: 0
   m_Name: FiringPoint
   m_TagString: Untagged
@@ -270,12 +272,32 @@ Transform:
   m_GameObject: {fileID: 7477925089964485882}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.25, z: 0.7}
+  m_LocalPosition: {x: 0.617, y: 0.25, z: 0.007}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6691039935756341373}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7976368881733852915
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7477925089964485882}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2230064e49caa684c8b0e387a8a63f01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  burstMaxScale: 0.35
+  burstDuration: 0.07
+  burstColor: {r: 0.4, g: 0.9, b: 1, a: 0.9}
+  useLight: 1
+  lightColor: {r: 0.4, g: 0.85, b: 1, a: 1}
+  lightIntensity: 6
+  lightRange: 4
+  lightDuration: 0.06
 --- !u!1001 &587634569835158302
 PrefabInstance:
   m_ObjectHideFlags: 0

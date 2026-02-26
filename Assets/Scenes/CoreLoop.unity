@@ -1795,6 +1795,33 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   flashImage: {fileID: 0}
   flashCanvas: {fileID: 0}
+--- !u!114 &628502575
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 628502562}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a0c6c1add9a87e4487fd8b7b3d6145d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  bracketColor: {r: 0.25, g: 0.85, b: 1, a: 0.9}
+  visorTintColor: {r: 0.05, g: 0.3, b: 0.65, a: 0.04}
+  edgeColor: {r: 0, g: 0, b: 0, a: 0}
+  bracketLength: 55
+  bracketThickness: 3
+  bracketPadding: 20
+  animateBrackets: 1
+  pulseSpeed: 1.2
+  pulseMinAlpha: 0.5
+  vignetteSize: 110
+  applyPostProcessing: 1
+  visorColorFilter: {r: 0.88, g: 0.97, b: 1, a: 1}
+  contrastBoost: 18
+  saturationShift: -8
+  ppVignetteIntensity: 0.3
 --- !u!1 &629227691
 GameObject:
   m_ObjectHideFlags: 0
@@ -10794,7 +10821,7 @@ GameObject:
   - component: {fileID: 1195206749}
   - component: {fileID: 1195206750}
   - component: {fileID: 1195206751}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: DoorController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14507,6 +14534,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 8507177354990542120, guid: 875803b5d18027b4ea7e1ac2b9885985, type: 3}
       insertIndex: -1
       addedObject: {fileID: 628502569}
+    - targetCorrespondingSourceObject: {fileID: 8507177354990542120, guid: 875803b5d18027b4ea7e1ac2b9885985, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 628502575}
     - targetCorrespondingSourceObject: {fileID: 4385960987077647988, guid: 875803b5d18027b4ea7e1ac2b9885985, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1985829925}
