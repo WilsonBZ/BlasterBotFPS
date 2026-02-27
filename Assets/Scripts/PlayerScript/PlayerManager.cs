@@ -65,6 +65,7 @@ public class PlayerManager : MonoBehaviour, IDamageable
 
     private void Die()
     {
+        
         if (isDead)
         {
             return;
