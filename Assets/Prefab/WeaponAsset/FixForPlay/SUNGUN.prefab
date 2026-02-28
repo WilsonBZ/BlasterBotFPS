@@ -183,6 +183,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5504880968955019762, guid: 52a9469cb6972384b9836d5710d2180c, type: 3}
+      propertyPath: m_Size.z
+      value: 1.3158066
+      objectReference: {fileID: 0}
+    - target: {fileID: 5504880968955019762, guid: 52a9469cb6972384b9836d5710d2180c, type: 3}
+      propertyPath: m_Center.x
+      value: -2.4295912e-16
+      objectReference: {fileID: 0}
+    - target: {fileID: 5504880968955019762, guid: 52a9469cb6972384b9836d5710d2180c, type: 3}
+      propertyPath: m_Center.z
+      value: -0.1420967
+      objectReference: {fileID: 0}
     - target: {fileID: 8661591457006444582, guid: 52a9469cb6972384b9836d5710d2180c, type: 3}
       propertyPath: m_Layer
       value: 8
@@ -229,6 +241,7 @@ MonoBehaviour:
   lightIntensity: 8
   lightRange: 5
   lightDuration: 0.08
+  baseMaterial: {fileID: 2100000, guid: 0dfc153d60fa58047a8cb0cf5172bb12, type: 2}
 --- !u!4 &4178195634149619796 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3189073280847888783, guid: 52a9469cb6972384b9836d5710d2180c, type: 3}

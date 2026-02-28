@@ -42,7 +42,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2908855956742684819}
   - component: {fileID: 5637431710137084567}
-  - component: {fileID: 4530370290173647866}
+  - component: {fileID: 3631609041855411267}
   m_Layer: 0
   m_Name: GAZGUN
   m_TagString: Untagged
@@ -85,9 +85,9 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &4530370290173647866
+  m_Size: {x: 1, y: 1, z: 0.91468734}
+  m_Center: {x: 0, y: 0, z: -0.042656332}
+--- !u!114 &3631609041855411267
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -96,25 +96,42 @@ MonoBehaviour:
   m_GameObject: {fileID: 9078213208231633830}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5a4eac2f2ed4ab246a1a7ba283a210cd, type: 3}
+  m_Script: {fileID: 11500000, guid: a24fc52fd9baab844bbb3ae16b16ed36, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   basePellets: 1
-  baseSpreadAngle: 10
-  fireRate: 3
+  baseSpreadAngle: 0
+  fireRate: 0.01
   energyCostPerShot: 3
   firePoint: {fileID: 2636963464181078774}
-  projectilePrefab: {fileID: 8184155314046719719, guid: ae6f733ff470385429cb9dd18b79b0cf, type: 3}
+  projectilePrefab: {fileID: 0}
   useCrosshairWhenCentered: 1
   muzzleFlash: {fileID: 0}
   muzzleFlashVFX: {fileID: 1826739128209807984}
   audioSource: {fileID: 1640741415818773055}
-  shootSound: {fileID: 8300000, guid: 6cd42037ffe32d843806268e0a57b186, type: 3}
+  shootSound: {fileID: 0}
   pitchVariation: 0.1
-  recoilAngle: 30
-  recoilRandomness: 0.3
-  recoilReturnSpeed: 10
+  recoilAngle: 15
+  recoilRandomness: 0.2
+  recoilReturnSpeed: 8
   recoilRoot: {fileID: 5824668862037045435}
+  minChargeTime: 0.4
+  maxChargeTime: 2.5
+  chargeProjectilePrefab: {fileID: 8212221339860360197, guid: 5323417889e194c4fab4fcd0690204f7, type: 3}
+  minDamage: 20
+  maxDamage: 150
+  minProjectileScale: 0.3
+  maxProjectileScale: 3
+  chargeParticles: {fileID: 0}
+  chargeLight: {fileID: 8083113027426906859}
+  minChargeColor: {r: 0.4, g: 0.9, b: 1, a: 1}
+  maxChargeColor: {r: 1, g: 0.3, b: 0.05, a: 1}
+  maxLightIntensity: 8
+  maxLightRange: 5
+  chargeStartSound: {fileID: 0}
+  chargeFireSound: {fileID: 0}
+  chargeCancelSound: {fileID: 0}
+  chargeAudioSource: {fileID: 1640741415818773055}
 --- !u!1001 &5794272805449988352
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -179,6 +196,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: Gazouiller07_Weapon
       objectReference: {fileID: 0}
+    - target: {fileID: 5593527020952157815, guid: 73a8f80aa7e5e68488ac8f12aad1bdb1, type: 3}
+      propertyPath: m_Size.x
+      value: 1.1346009
+      objectReference: {fileID: 0}
+    - target: {fileID: 5593527020952157815, guid: 73a8f80aa7e5e68488ac8f12aad1bdb1, type: 3}
+      propertyPath: m_Center.x
+      value: -0.35298574
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:
     - {fileID: 8204624762095028719, guid: 73a8f80aa7e5e68488ac8f12aad1bdb1, type: 3}
@@ -187,6 +212,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 8596324224808616976, guid: 73a8f80aa7e5e68488ac8f12aad1bdb1, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1826739128209807984}
+    - targetCorrespondingSourceObject: {fileID: 8596324224808616976, guid: 73a8f80aa7e5e68488ac8f12aad1bdb1, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8083113027426906859}
   m_SourcePrefab: {fileID: 100100000, guid: 73a8f80aa7e5e68488ac8f12aad1bdb1, type: 3}
 --- !u!4 &1320950995197106236 stripped
 Transform:
@@ -228,3 +256,69 @@ MonoBehaviour:
   lightIntensity: 6
   lightRange: 4
   lightDuration: 0.06
+  baseMaterial: {fileID: 2100000, guid: 0dfc153d60fa58047a8cb0cf5172bb12, type: 2}
+--- !u!108 &8083113027426906859
+Light:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2820699484860775696}
+  m_Enabled: 1
+  serializedVersion: 11
+  m_Type: 2
+  m_Color: {r: 0.4, g: 0.9, b: 1, a: 1}
+  m_Intensity: 0
+  m_Range: 5
+  m_SpotAngle: 30
+  m_InnerSpotAngle: 21.80208
+  m_CookieSize: 10
+  m_Shadows:
+    m_Type: 0
+    m_Resolution: -1
+    m_CustomResolution: -1
+    m_Strength: 1
+    m_Bias: 0.05
+    m_NormalBias: 0.4
+    m_NearPlane: 0.2
+    m_CullingMatrixOverride:
+      e00: 1
+      e01: 0
+      e02: 0
+      e03: 0
+      e10: 0
+      e11: 1
+      e12: 0
+      e13: 0
+      e20: 0
+      e21: 0
+      e22: 1
+      e23: 0
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 1
+    m_UseCullingMatrixOverride: 0
+  m_Cookie: {fileID: 0}
+  m_DrawHalo: 0
+  m_Flare: {fileID: 0}
+  m_RenderMode: 0
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_RenderingLayerMask: 1
+  m_Lightmapping: 4
+  m_LightShadowCasterMode: 0
+  m_AreaSize: {x: 1, y: 1}
+  m_BounceIntensity: 1
+  m_ColorTemperature: 6570
+  m_UseColorTemperature: 0
+  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_UseBoundingSphereOverride: 0
+  m_UseViewFrustumForShadowCasterCull: 1
+  m_ForceVisible: 0
+  m_ShadowRadius: 0
+  m_ShadowAngle: 0
+  m_LightUnit: 1
+  m_LuxAtDistance: 1
+  m_EnableSpotReflector: 1

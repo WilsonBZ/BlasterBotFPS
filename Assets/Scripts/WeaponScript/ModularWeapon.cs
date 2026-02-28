@@ -106,7 +106,7 @@ public class ModularWeapon : MonoBehaviour
         CacheRecoilRootAndOriginal();
     }
 
-    public bool TryFire(ArmBattery battery, Camera playerCamera, float centerMultiplier = 1f)
+    public virtual bool TryFire(ArmBattery battery, Camera playerCamera, float centerMultiplier = 1f)
     {
         float interval = 1f / Mathf.Max(0.0001f, fireRate);
         if (Time.time - lastShotTime < interval) return false;
@@ -206,7 +206,7 @@ public class ModularWeapon : MonoBehaviour
         }
     }
 
-    void ApplyRecoil()
+    protected void ApplyRecoil()
     {
         if (recoilAngle <= 0f) return;
         float rand = Random.Range(1f - recoilRandomness, 1f + recoilRandomness);

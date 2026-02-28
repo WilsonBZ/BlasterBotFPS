@@ -12,8 +12,7 @@ public class EnemyProjectile : MonoBehaviour
     [SerializeField] private LayerMask targetLayers;
 
     [Header("Effects")]
-    [SerializeField] private GameObject spawnEffect;
-    [SerializeField] private GameObject impactEffect;
+    [SerializeField] private GameObject impactSphere;
     [SerializeField] private TrailRenderer trail;
 
     [Header("Audio")]
@@ -21,6 +20,7 @@ public class EnemyProjectile : MonoBehaviour
     [SerializeField] private AudioClip fireSound;
 
     private Rigidbody rb;
+    private bool hasHit = false;
 
     private void Awake()
     {
@@ -44,10 +44,11 @@ public class EnemyProjectile : MonoBehaviour
         {
             audioSource.PlayOneShot(fireSound);
         }
-
-        SpawnEffect(spawnEffect, transform.position, transform.forward);
     }
 
+    /// <summary>
+    /// Sets the audio pitch for variation between shots.
+    /// </summary>
     public void SetPitch(float pitch)
     {
         if (audioSource != null)
@@ -58,53 +59,54 @@ public class EnemyProjectile : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (!IsValidTarget(other.gameObject))
-        {
-            return;
-        }
+        if (hasHit || !IsValidTarget(other.gameObject)) return;
+
+        hasHit = true;
 
         IDamageable damageable = other.GetComponent<IDamageable>();
-
         if (damageable != null)
         {
-            Vector3 hitDirection = transform.forward;
             Vector3 hitPoint = other.ClosestPoint(transform.position);
-            damageable.TakeDamage(damage, hitPoint, hitDirection);
-            SpawnEffect(impactEffect, hitPoint, -hitDirection);
+            damageable.TakeDamage(damage, hitPoint, transform.forward);
         }
 
-        StartCoroutine(DestroyTrail());
+        SpawnImpactSphere(transform.position);
+        StartCoroutine(DestroyAfterTrail());
         Destroy(gameObject);
     }
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (!IsValidTarget(collision.gameObject))
-        {
-            return;
-        }
+        if (hasHit || !IsValidTarget(collision.gameObject)) return;
+
+        hasHit = true;
 
         IDamageable damageable = collision.gameObject.GetComponent<IDamageable>();
-
         if (damageable != null)
         {
-            Vector3 hitDirection = transform.forward;
             Vector3 hitPoint = collision.contacts[0].point;
-            damageable.TakeDamage(damage, hitPoint, hitDirection);
-            SpawnEffect(impactEffect, hitPoint, collision.contacts[0].normal);
+            damageable.TakeDamage(damage, hitPoint, transform.forward);
         }
 
-        StartCoroutine(DestroyTrail());
+        SpawnImpactSphere(collision.contacts[0].point);
+        StartCoroutine(DestroyAfterTrail());
         Destroy(gameObject);
     }
 
     private bool IsValidTarget(GameObject target)
     {
-        int targetLayer = target.layer;
-        return ((1 << targetLayer) & targetLayers) != 0;
+        return ((1 << target.layer) & targetLayers) != 0;
     }
 
-    private IEnumerator DestroyTrail()
+    private void SpawnImpactSphere(Vector3 position)
+    {
+        if (impactSphere != null)
+        {
+            Instantiate(impactSphere, position, Quaternion.identity);
+        }
+    }
+
+    private IEnumerator DestroyAfterTrail()
     {
         if (trail != null)
         {
@@ -113,21 +115,5 @@ public class EnemyProjectile : MonoBehaviour
         }
         yield return null;
     }
-
-    private void SpawnEffect(GameObject effect, Vector3 position, Vector3 normal)
-    {
-        if (!effect) return;
-
-        GameObject vfx = Instantiate(effect, position, Quaternion.LookRotation(normal));
-
-        ParticleSystem ps = vfx.GetComponent<ParticleSystem>();
-        if (ps != null)
-        {
-            Destroy(vfx, ps.main.duration + ps.main.startLifetime.constantMax);
-        }
-        else
-        {
-            Destroy(vfx, 2f);
-        }
-    }
 }
+

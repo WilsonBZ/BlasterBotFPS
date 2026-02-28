@@ -18,6 +18,7 @@ public class HitImpactEffect : MonoBehaviour
     [SerializeField] private float ringMaxScale = 2f;
     [SerializeField] private float ringSpeed = 10f;
     [SerializeField] private Color ringColor = new Color(1f, 0.7f, 0.3f, 0.6f);
+    [SerializeField] private Material ringBaseMaterial;
     
     [Header("Audio")]
     [SerializeField] private AudioClip[] hitSounds;
@@ -77,17 +78,23 @@ public class HitImpactEffect : MonoBehaviour
         ring.transform.position = position;
         ring.transform.rotation = rotation;
         ring.transform.localScale = Vector3.one * 0.1f;
-        
+
         Destroy(ring.GetComponent<Collider>());
-        
-        Material mat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+
+        Material mat = ringBaseMaterial != null
+            ? new Material(ringBaseMaterial)
+            : null;
+
+        if (mat == null)
+        {
+            Debug.LogError("HitImpactEffect: ringBaseMaterial is not assigned.", this);
+            Destroy(ring);
+            return;
+        }
+
         mat.SetColor("_BaseColor", ringColor);
-        mat.SetFloat("_Surface", 1);
-        mat.renderQueue = 3000;
-        
-        Renderer renderer = ring.GetComponent<Renderer>();
-        renderer.material = mat;
-        
+        ring.GetComponent<Renderer>().material = mat;
+
         HitRingExpander expander = ring.AddComponent<HitRingExpander>();
         expander.maxScale = ringMaxScale;
         expander.expandSpeed = ringSpeed;

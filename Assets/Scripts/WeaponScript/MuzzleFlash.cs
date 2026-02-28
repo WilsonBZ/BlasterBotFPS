@@ -19,6 +19,9 @@ public class MuzzleFlash : MonoBehaviour
     [SerializeField] private float lightRange = 4f;
     [SerializeField] private float lightDuration = 0.06f;
 
+    [Header("Material")]
+    [SerializeField] private Material baseMaterial;
+
     private Light flashLight;
 
     private void Awake()
@@ -94,10 +97,11 @@ public class MuzzleFlash : MonoBehaviour
 
         Destroy(sphere.GetComponent<Collider>());
 
-        mat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+        mat = baseMaterial != null
+            ? new Material(baseMaterial)
+            : new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+
         mat.SetColor("_BaseColor", burstColor);
-        mat.SetFloat("_Surface", 1);
-        mat.renderQueue = 3000;
 
         sphere.GetComponent<Renderer>().material = mat;
 

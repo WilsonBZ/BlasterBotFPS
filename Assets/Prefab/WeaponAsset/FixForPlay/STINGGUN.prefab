@@ -85,8 +85,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 0.6626981, y: 1, z: 1}
+  m_Center: {x: -0.16865095, y: 0, z: 0}
 --- !u!114 &9108565387738537761
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -284,6 +284,7 @@ MonoBehaviour:
   lightIntensity: 6
   lightRange: 4
   lightDuration: 0.06
+  baseMaterial: {fileID: 2100000, guid: 0dfc153d60fa58047a8cb0cf5172bb12, type: 2}
 --- !u!4 &2715626341881300533 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 940002021365629669, guid: 72e1a20d6d8cb794a9115aef25464e94, type: 3}

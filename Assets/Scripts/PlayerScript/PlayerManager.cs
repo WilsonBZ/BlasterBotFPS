@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerManager : MonoBehaviour, IDamageable
 {
@@ -65,32 +66,33 @@ public class PlayerManager : MonoBehaviour, IDamageable
 
     private void Die()
     {
-        if (isDead)
-        {
-            return;
-        }
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        //if (isDead)
+        //{
+        //    return;
+        //}
 
-        isDead = true;
-        
+        //isDead = true;
+
         Debug.Log("PlayerManager: Die() called - Player is dead!");
 
-        PlayerMovement movement = GetComponent<PlayerMovement>();
-        if (movement != null)
-        {
-            movement.enabled = false;
-            Debug.Log("PlayerManager: Disabled PlayerMovement");
-        }
+        //PlayerMovement movement = GetComponent<PlayerMovement>();
+        //if (movement != null)
+        //{
+        //    movement.enabled = false;
+        //    Debug.Log("PlayerManager: Disabled PlayerMovement");
+        //}
 
-        MouseMovement mouse = GetComponentInChildren<MouseMovement>();
-        if (mouse != null)
-        {
-            mouse.enabled = false;
-            Debug.Log("PlayerManager: Disabled MouseMovement");
-        }
+        //MouseMovement mouse = GetComponentInChildren<MouseMovement>();
+        //if (mouse != null)
+        //{
+        //    mouse.enabled = false;
+        //    Debug.Log("PlayerManager: Disabled MouseMovement");
+        //}
 
-        Debug.Log($"PlayerManager: Invoking OnDeath event. Subscribers: {OnDeath?.GetInvocationList()?.Length ?? 0}");
-        OnDeath?.Invoke();
-        Debug.Log("PlayerManager: OnDeath event invoked");
+        //Debug.Log($"PlayerManager: Invoking OnDeath event. Subscribers: {OnDeath?.GetInvocationList()?.Length ?? 0}");
+        //OnDeath?.Invoke();
+        //Debug.Log("PlayerManager: OnDeath event invoked");
     }
 
     public void Heal(float amount)

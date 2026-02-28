@@ -4,10 +4,12 @@ public class ImpactSphere : MonoBehaviour
 {
     [Header("Sphere Settings")]
     [SerializeField] private float maxScale = 1.5f;
-    [SerializeField] private float expandSpeed = 8f;
     [SerializeField] private Color sphereColor = new Color(1f, 0.8f, 0.3f, 0.8f);
     [SerializeField] private float lifetime = 0.3f;
-    
+
+    [Header("Material")]
+    [SerializeField] private Material baseMaterial;
+
     private GameObject sphere;
     private Material material;
     private float elapsed = 0f;
@@ -25,13 +27,13 @@ public class ImpactSphere : MonoBehaviour
         
         Destroy(sphere.GetComponent<Collider>());
         
-        material = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+        material = baseMaterial != null
+            ? new Material(baseMaterial)
+            : new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+
         material.SetColor("_BaseColor", sphereColor);
-        material.SetFloat("_Surface", 1);
-        material.renderQueue = 3000;
         
-        Renderer renderer = sphere.GetComponent<Renderer>();
-        renderer.material = material;
+        sphere.GetComponent<Renderer>().material = material;
         
         Destroy(gameObject, lifetime);
     }
