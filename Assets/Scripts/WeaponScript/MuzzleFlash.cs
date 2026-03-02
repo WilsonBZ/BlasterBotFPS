@@ -97,13 +97,21 @@ public class MuzzleFlash : MonoBehaviour
 
         Destroy(sphere.GetComponent<Collider>());
 
-        mat = baseMaterial != null
-            ? new Material(baseMaterial)
-            : new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+        if (baseMaterial == null)
+        {
+            Debug.LogError("MuzzleFlash: baseMaterial not assigned. Assign VFX_MuzzleFlash.mat in the prefab.");
+            mat = null;
+            return sphere;
+        }
 
+        mat = new Material(baseMaterial);
         mat.SetColor("_BaseColor", burstColor);
-
         sphere.GetComponent<Renderer>().material = mat;
+
+        // Failsafe: if the coroutine is abandoned mid-flash (e.g. weapon destroyed),
+        // the sphere is a child and dies with the parent. Material is cleaned up below.
+        // This explicit timed destroy ensures the sphere is gone even in edge cases.
+        Destroy(sphere, burstDuration + 0.5f);
 
         return sphere;
     }

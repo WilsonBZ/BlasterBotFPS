@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -36,6 +35,9 @@ public class ChargeProjectile : MonoBehaviour
     private Rigidbody rb;
     private bool hasExploded;
     private Material instanceMaterial;
+
+    // Player weapons must never damage the player.
+    private static bool IsPlayer(GameObject go) => go.CompareTag("Player");
 
     // ─── Init ─────────────────────────────────────────────────────────────────
 
@@ -90,13 +92,15 @@ public class ChargeProjectile : MonoBehaviour
         Renderer rend = GetComponent<Renderer>();
         if (rend == null) return;
 
-        instanceMaterial = baseMaterial != null
-            ? new Material(baseMaterial)
-            : new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+        if (baseMaterial == null)
+        {
+            Debug.LogError("ChargeProjectile: baseMaterial not assigned. Assign VFX_ChargeProjectile.mat in the prefab.");
+            return;
+        }
 
+        instanceMaterial = new Material(baseMaterial);
         Color color = Color.Lerp(minChargeColor, maxChargeColor, ratio);
         instanceMaterial.SetColor("_BaseColor", color);
-
         rend.material = instanceMaterial;
     }
 
@@ -145,45 +149,30 @@ public class ChargeProjectile : MonoBehaviour
             fx.transform.localScale = Vector3.one * Mathf.Lerp(0.5f, 2f, chargeRatio);
         }
 
-        // Always spawn a shockwave sphere
-        StartCoroutine(SpawnShockwave(point));
+        SpawnShockwave(point);
     }
 
-    private IEnumerator SpawnShockwave(Vector3 point)
+    // No longer a coroutine — the sphere manages its own lifecycle via VFXExpandAndFade.
+    private void SpawnShockwave(Vector3 point)
     {
+        if (baseMaterial == null)
+        {
+            Debug.LogError("ChargeProjectile: baseMaterial is not assigned. Shockwave skipped.");
+            return;
+        }
+
         GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        sphere.transform.position = point;
+        sphere.transform.position   = point;
         sphere.transform.localScale = Vector3.one * 0.1f;
         Destroy(sphere.GetComponent<Collider>());
 
-        Material mat = baseMaterial != null
-            ? new Material(baseMaterial)
-            : new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-
+        Material mat = new Material(baseMaterial);
         Color shockColor = Color.Lerp(minChargeColor, maxChargeColor, chargeRatio);
         mat.SetColor("_BaseColor", shockColor);
         sphere.GetComponent<Renderer>().material = mat;
 
-        float duration = 0.4f;
-        float elapsed = 0f;
-        float targetScale = explosionRadius * 2f;
-
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / duration;
-
-            sphere.transform.localScale = Vector3.one * Mathf.Lerp(0.1f, targetScale, t);
-
-            Color c = mat.GetColor("_BaseColor");
-            c.a = Mathf.Lerp(0.85f, 0f, t);
-            mat.SetColor("_BaseColor", c);
-
-            yield return null;
-        }
-
-        Destroy(mat);
-        Destroy(sphere);
+        VFXExpandAndFade vfx = sphere.AddComponent<VFXExpandAndFade>();
+        vfx.Initialize(mat, explosionRadius * 2f, 0.4f);
     }
 
     private void ApplyAoEDamage(Vector3 point)
@@ -193,6 +182,9 @@ public class ChargeProjectile : MonoBehaviour
 
         foreach (Collider col in hits)
         {
+            // Never damage the player with a player-fired weapon
+            if (IsPlayer(col.gameObject) || IsPlayer(col.transform.root.gameObject)) continue;
+
             GameObject root = col.transform.root.gameObject;
             if (alreadyDamaged.Contains(root)) continue;
             alreadyDamaged.Add(root);
