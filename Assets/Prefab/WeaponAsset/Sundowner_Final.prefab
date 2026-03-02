@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3077447231922611015}
+  - component: {fileID: 2432284867784872988}
   m_Layer: 0
   m_Name: FiringPoint
   m_TagString: Untagged
@@ -31,6 +32,27 @@ Transform:
   m_Children: []
   m_Father: {fileID: 4776052838417599229}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2432284867784872988
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1341564492990486616}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2230064e49caa684c8b0e387a8a63f01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  burstMaxScale: 0.5
+  burstDuration: 0.09
+  burstColor: {r: 1, g: 0.5, b: 0.2, a: 0.9}
+  useLight: 1
+  lightColor: {r: 1, g: 0.5, b: 0.2, a: 1}
+  lightIntensity: 8
+  lightRange: 5
+  lightDuration: 0.08
+  baseMaterial: {fileID: 2100000, guid: 0dfc153d60fa58047a8cb0cf5172bb12, type: 2}
 --- !u!1 &3617227102855798180
 GameObject:
   m_ObjectHideFlags: 0
@@ -140,8 +162,10 @@ MonoBehaviour:
   projectilePrefab: {fileID: 4206907625901127713, guid: 6f221f56ddce7df4d8f2919c3fadacfc, type: 3}
   useCrosshairWhenCentered: 1
   muzzleFlash: {fileID: 0}
+  muzzleFlashVFX: {fileID: 2432284867784872988}
   audioSource: {fileID: 1458241813622815394}
   shootSound: {fileID: 8300000, guid: 6cd42037ffe32d843806268e0a57b186, type: 3}
+  pitchVariation: 0.1
   recoilAngle: 4
   recoilRandomness: 0.1
   recoilReturnSpeed: 8

@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2855396957433090329}
+  - component: {fileID: 8085302689234661441}
   m_Layer: 0
   m_Name: FiringPoint
   m_TagString: Untagged
@@ -31,6 +32,27 @@ Transform:
   m_Children: []
   m_Father: {fileID: 3632832685935007863}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8085302689234661441
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5255766476738874477}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2230064e49caa684c8b0e387a8a63f01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  burstMaxScale: 0.3
+  burstDuration: 0.07
+  burstColor: {r: 0.8, g: 0.2, b: 1, a: 0.9}
+  useLight: 1
+  lightColor: {r: 0.8, g: 0.2, b: 1, a: 1}
+  lightIntensity: 5
+  lightRange: 3
+  lightDuration: 0.06
+  baseMaterial: {fileID: 2100000, guid: 0dfc153d60fa58047a8cb0cf5172bb12, type: 2}
 --- !u!1001 &3882335330797944732
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -183,11 +205,26 @@ MonoBehaviour:
   groundMask:
     serializedVersion: 2
     m_Bits: 64
+  verticalVariationSpeed: 1
+  verticalVariationAmount: 1.5
+  verticalChangeInterval: 3
+  proximityCheckRadius: 3
+  verticalSeparationForce: 5
+  minVerticalSeparation: 2
   firePoint: {fileID: 2855396957433090329}
   playerLayer:
     serializedVersion: 2
     m_Bits: 128
   spawner: {fileID: 0}
+  burstCount: 3
+  burstInterval: 0.18
+  aimDuration: 1.5
+  laserMaxDistance: 40
+  laserColor: {r: 1, g: 0.1, b: 0.1, a: 1}
+  laserWidth: 0.04
+  laserMaterial: {fileID: 2100000, guid: e71539a05ffb9304c977b77fa17e75cf, type: 2}
+  muzzleFlash: {fileID: 8085302689234661441}
+  impactSphere: {fileID: 0}
   strafeSpeed: 16
   strafeChangeInterval: 3
   strafeRadius: 2.3
@@ -196,8 +233,9 @@ MonoBehaviour:
   deathEffect: {fileID: 0}
   damageNumberPrefab: {fileID: 0}
   numberOffset: {x: 0, y: 1, z: 0}
-  defaultKnockbackRecovery: 0.4
-  maxAllowedKnockbackSpeed: 12
+  knockbackForceMultiplier: 2
+  knockbackRecoveryTime: 0.4
+  maxKnockbackSpeed: 12
 --- !u!1001 &6336374247960763955
 PrefabInstance:
   m_ObjectHideFlags: 0

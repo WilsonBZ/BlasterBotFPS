@@ -107,8 +107,10 @@ MonoBehaviour:
   projectilePrefab: {fileID: 4206907625901127713, guid: 6f221f56ddce7df4d8f2919c3fadacfc, type: 3}
   useCrosshairWhenCentered: 1
   muzzleFlash: {fileID: 0}
+  muzzleFlashVFX: {fileID: 2367308858939801749}
   audioSource: {fileID: 5491457684886204093}
   shootSound: {fileID: 8300000, guid: 6cd42037ffe32d843806268e0a57b186, type: 3}
+  pitchVariation: 0.1
   recoilAngle: 4
   recoilRandomness: 0.1
   recoilReturnSpeed: 8
@@ -122,12 +124,16 @@ PrefabInstance:
     m_TransformParent: {fileID: 7352466963483308321}
     m_Modifications:
     - target: {fileID: 17225236259422767, guid: 52a9469cb6972384b9836d5710d2180c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 17225236259422767, guid: 52a9469cb6972384b9836d5710d2180c, type: 3}
       propertyPath: m_LocalPosition.y
       value: -0.02
       objectReference: {fileID: 0}
     - target: {fileID: 17225236259422767, guid: 52a9469cb6972384b9836d5710d2180c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.684
+      value: 1.016
       objectReference: {fileID: 0}
     - target: {fileID: 305379163768051605, guid: 52a9469cb6972384b9836d5710d2180c, type: 3}
       propertyPath: recoilRoot
@@ -181,6 +187,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5504880968955019762, guid: 52a9469cb6972384b9836d5710d2180c, type: 3}
+      propertyPath: m_Size.z
+      value: 1.3158066
+      objectReference: {fileID: 0}
+    - target: {fileID: 5504880968955019762, guid: 52a9469cb6972384b9836d5710d2180c, type: 3}
+      propertyPath: m_Center.x
+      value: -2.4295912e-16
+      objectReference: {fileID: 0}
+    - target: {fileID: 5504880968955019762, guid: 52a9469cb6972384b9836d5710d2180c, type: 3}
+      propertyPath: m_Center.z
+      value: -0.1420967
+      objectReference: {fileID: 0}
     - target: {fileID: 8661591457006444582, guid: 52a9469cb6972384b9836d5710d2180c, type: 3}
       propertyPath: m_Layer
       value: 8
@@ -192,13 +210,42 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2598794812371452861, guid: 52a9469cb6972384b9836d5710d2180c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2367308858939801749}
   m_SourcePrefab: {fileID: 100100000, guid: 52a9469cb6972384b9836d5710d2180c, type: 3}
 --- !u!4 &1551210558183308276 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 17225236259422767, guid: 52a9469cb6972384b9836d5710d2180c, type: 3}
   m_PrefabInstance: {fileID: 1565620490078501339}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &3578942880904182374 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2598794812371452861, guid: 52a9469cb6972384b9836d5710d2180c, type: 3}
+  m_PrefabInstance: {fileID: 1565620490078501339}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2367308858939801749
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3578942880904182374}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2230064e49caa684c8b0e387a8a63f01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  burstMaxScale: 0.5
+  burstDuration: 0.09
+  burstColor: {r: 1, g: 0.5, b: 0.2, a: 0.9}
+  useLight: 1
+  lightColor: {r: 1, g: 0.5, b: 0.2, a: 1}
+  lightIntensity: 8
+  lightRange: 5
+  lightDuration: 0.08
+  baseMaterial: {fileID: 2100000, guid: 0dfc153d60fa58047a8cb0cf5172bb12, type: 2}
 --- !u!4 &4178195634149619796 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3189073280847888783, guid: 52a9469cb6972384b9836d5710d2180c, type: 3}

@@ -61,7 +61,8 @@ public class Projectile : MonoBehaviour
     private void FixedUpdate()
     {
         if (Physics.SphereCast(transform.position, collisionCheckRadius,
-            transform.forward, out RaycastHit hit, Speed * Time.fixedDeltaTime))
+            transform.forward, out RaycastHit hit, Speed * Time.fixedDeltaTime,
+            Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
         {
             HandleCollision(hit);
         }
@@ -104,6 +105,8 @@ public class Projectile : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        if (other.gameObject.layer == LayerMask.NameToLayer("Ignore Raycast")) return;
+
         IDamageable damageable = other.GetComponent<IDamageable>();
 
         if (damageable != null)
