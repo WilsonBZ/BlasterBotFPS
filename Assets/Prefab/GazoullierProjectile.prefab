@@ -113,10 +113,11 @@ MonoBehaviour:
   projectileCollider: {fileID: 1858789975474839010}
   collisionCheckRadius: 0.2
   spawnEffect: {fileID: 0}
-  nonDamageEffect: {fileID: 0}
-  impactEffect: {fileID: 0}
+  impactSphere: {fileID: 6521721749499731154, guid: 27fb14fa8adafd3479998ce3dd04a471, type: 3}
   trail: {fileID: 0}
   hitStopDuration: 0.03
+  audioSource: {fileID: 0}
+  fireSound: {fileID: 0}
 --- !u!65 &1858789975474839010
 BoxCollider:
   m_ObjectHideFlags: 0

@@ -15,9 +15,10 @@ MonoBehaviour:
   isRanged: 1
   preferredDistance: 8
   fireCooldown: 1.2
-  projectilePrefab: {fileID: 8184155314046719719, guid: ae6f733ff470385429cb9dd18b79b0cf, type: 3}
+  projectilePrefab: {fileID: 179324710382678566, guid: 4bade263e1026c5468950c60b53056c4, type: 3}
   canExplode: 0
-  explosionRange: 2
+  explosionTriggerRange: 2
+  explosionDamageRadius: 5
   explosionDamage: 0
   explosionForce: 0
   maxHealth: 60

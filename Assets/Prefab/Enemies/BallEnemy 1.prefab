@@ -48,6 +48,7 @@ GameObject:
   - component: {fileID: 7924974133882516988}
   - component: {fileID: 7840433988009612692}
   - component: {fileID: 1976021738845865437}
+  - component: {fileID: 289264244146380807}
   m_Layer: 0
   m_Name: BallEnemy 1
   m_TagString: Untagged
@@ -118,12 +119,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 128
   spawner: {fileID: 0}
-  deathEffect: {fileID: 5289173458515104635, guid: 0f073673bec7b6c448431b334dd87d68, type: 3}
+  deathEffect: {fileID: 2718306287638060628, guid: c7cf24b0b751ca24fbd440c6a8153070, type: 3}
+  explosionFeedback: {fileID: 289264244146380807}
   damageNumberPrefab: {fileID: 0}
   numberOffset: {x: 0, y: 1.5, z: 0}
-  defaultKnockbackRecovery: 0.6
-  maxAllowedKnockbackSpeed: 15
   knockbackForceMultiplier: 3
+  knockbackRecoveryTime: 0.3
+  maxKnockbackSpeed: 15
   hitSlowMultiplier: 0.5
   hitSlowDuration: 0.8
   hitSlowRestoreSmoothTime: 0.15
@@ -257,15 +259,31 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   flashColor: {r: 1, g: 1, b: 1, a: 1}
-  flashDuration: 2
-  flashCurve:
+  flashDuration: 0.1
+--- !u!114 &289264244146380807
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3235534787794620987}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3803d4fb4d5835b4295c28e5afe12f91, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  shakeIntensity: 0.8
+  shakeDuration: 0.5
+  shakeFrequency: 35
+  maxShakeDistance: 20
+  shakeDistanceFalloff:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
       time: 0
       value: 1
       inSlope: 0
-      outSlope: 0
+      outSlope: -2
       tangentMode: 0
       weightedMode: 0
       inWeight: 0
@@ -273,7 +291,7 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 1
       value: 0
-      inSlope: 0
+      inSlope: -2
       outSlope: 0
       tangentMode: 0
       weightedMode: 0
@@ -282,8 +300,17 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  emissionProperty: _EmissionColor
-  useEmission: 1
+  useScreenFlash: 1
+  flashColor: {r: 1, g: 0.6, b: 0.2, a: 1}
+  flashDuration: 0.35
+  flashMaxAlpha: 0.6
+  useHitPause: 1
+  hitPauseDuration: 0.08
+  timeSlowScale: 0.4
+  timeSlowDuration: 0.12
+  explosionAudioSource: {fileID: 0}
+  explosionSound: {fileID: 0}
+  explosionVolume: 1
 --- !u!1001 &1045365286254303651
 PrefabInstance:
   m_ObjectHideFlags: 0

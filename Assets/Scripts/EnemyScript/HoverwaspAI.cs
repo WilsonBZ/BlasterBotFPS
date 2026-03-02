@@ -14,11 +14,36 @@ public class HoverwaspAI : BaseEnemy, IDamageable
     [SerializeField] private float hoverDamping = 5f;
     [SerializeField] private float heightCheckDistance = 10f;
     [SerializeField] private LayerMask groundMask;
+    [SerializeField] private float verticalVariationSpeed = 1f;
+    [SerializeField] private float verticalVariationAmount = 1.5f;
+    [SerializeField] private float verticalChangeInterval = 3f;
+    
+    [Header("Proximity Avoidance")]
+    [SerializeField] private float proximityCheckRadius = 3f;
+    [SerializeField] private float verticalSeparationForce = 5f;
+    [SerializeField] private float minVerticalSeparation = 2f;
 
     [Header("Combat")]
     [SerializeField] private Transform firePoint;
     [SerializeField] private LayerMask playerLayer;
     [HideInInspector] public WaveSpawner spawner;
+
+    [Header("Burst Fire")]
+    [SerializeField] private int burstCount = 3;
+    [SerializeField] private float burstInterval = 0.18f;
+
+    [Header("Aim & Laser")]
+    [SerializeField] private float aimDuration = 1.5f;
+    [SerializeField] private float laserMaxDistance = 40f;
+    [SerializeField] private Color laserColor = new Color(1f, 0.1f, 0.1f, 1f);
+    [SerializeField] private float laserWidth = 0.04f;
+    [SerializeField] private Material laserMaterial;
+
+    [Header("Muzzle Flash")]
+    [SerializeField] private MuzzleFlash muzzleFlash;
+
+    [Header("Impact VFX")]
+    [SerializeField] private GameObject impactSphere;
 
     [Header("Strafe Settings")]
     [SerializeField] private float strafeSpeed = 4f;
@@ -51,16 +76,24 @@ public class HoverwaspAI : BaseEnemy, IDamageable
     private float lastFireTime;
     private bool isExploded;
     private bool isKnockedBack;
+    private bool isShooting;
 
     private Vector3 strafeDirection;
     private float strafeTimer;
     private float preferredDistance;
     private HitFlashEffect hitFlashEffect;
+    private float targetHoverHeight;
+    private float verticalChangeTimer;
+    private int fireSoundIndex;
+
+    private LineRenderer laserRenderer;
+    private Vector3 lockedAimDirection;
 
     private void Awake()
     {
         InitializeComponents();
         InitializeRigidbody();
+        InitializeLaser();
         InitializeFromConfig();
     }
 
@@ -116,11 +149,35 @@ public class HoverwaspAI : BaseEnemy, IDamageable
         }
     }
 
+    private void InitializeLaser()
+    {
+        laserRenderer = gameObject.AddComponent<LineRenderer>();
+        laserRenderer.positionCount = 2;
+        laserRenderer.startWidth = laserWidth;
+        laserRenderer.endWidth = laserWidth * 0.5f;
+        laserRenderer.useWorldSpace = true;
+        laserRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+        if (laserMaterial != null)
+        {
+            Material mat = new Material(laserMaterial);
+            mat.SetColor("_BaseColor", laserColor);
+            laserRenderer.material = mat;
+        }
+        else
+        {
+            Debug.LogError("HoverwaspAI: laserMaterial is not assigned. Assign VFX_Laser.mat in the Inspector.", this);
+        }
+
+        laserRenderer.enabled = false;
+    }
+
     private void Start()
     {
         currentHealth = config != null ? config.maxHealth : 50f;
         CreateHealthBar();
         ChooseNewStrafeDirection();
+        targetHoverHeight = hoverHeight + Random.Range(-verticalVariationAmount, verticalVariationAmount);
     }
 
     private void Update()
@@ -129,7 +186,9 @@ public class HoverwaspAI : BaseEnemy, IDamageable
 
         UpdateStateMachine();
         UpdateStrafeTimer();
+        UpdateVerticalVariation();
         UpdateHealthBarPosition();
+        UpdateLaser();
     }
 
     private void FixedUpdate()
@@ -137,6 +196,17 @@ public class HoverwaspAI : BaseEnemy, IDamageable
         if (player == null || isExploded || isKnockedBack) return;
 
         ApplyHoverForce();
+        ApplyProximityAvoidance();
+
+        // Freeze horizontal movement while aiming or shooting
+        if (currentState == HoverwaspState.Aiming || currentState == HoverwaspState.Shooting)
+        {
+            Vector3 vel = rb.linearVelocity;
+            vel.x = Mathf.Lerp(vel.x, 0f, Time.fixedDeltaTime * 8f);
+            vel.z = Mathf.Lerp(vel.z, 0f, Time.fixedDeltaTime * 8f);
+            rb.linearVelocity = vel;
+            return;
+        }
 
         if (currentState == HoverwaspState.Combat)
         {
@@ -152,7 +222,7 @@ public class HoverwaspAI : BaseEnemy, IDamageable
         if (Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, heightCheckDistance, groundMask))
         {
             float currentHeight = hit.distance;
-            float heightError = hoverHeight - currentHeight;
+            float heightError = targetHoverHeight - currentHeight;
 
             float upForce = heightError * hoverForce;
             upForce -= rb.linearVelocity.y * hoverDamping;
@@ -162,6 +232,39 @@ public class HoverwaspAI : BaseEnemy, IDamageable
         else
         {
             rb.AddForce(Vector3.up * hoverForce * 0.5f, ForceMode.Acceleration);
+        }
+    }
+
+    private void ApplyProximityAvoidance()
+    {
+        Collider[] nearbyEnemies = Physics.OverlapSphere(transform.position, proximityCheckRadius);
+        
+        foreach (Collider col in nearbyEnemies)
+        {
+            if (col.gameObject == gameObject) continue;
+            
+            HoverwaspAI otherWasp = col.GetComponent<HoverwaspAI>();
+            if (otherWasp != null && !otherWasp.isExploded)
+            {
+                float verticalDistance = transform.position.y - otherWasp.transform.position.y;
+                
+                if (Mathf.Abs(verticalDistance) < minVerticalSeparation)
+                {
+                    float separationDirection = verticalDistance >= 0 ? 1f : -1f;
+                    rb.AddForce(Vector3.up * separationDirection * verticalSeparationForce, ForceMode.Acceleration);
+                }
+            }
+        }
+    }
+
+    private void UpdateVerticalVariation()
+    {
+        verticalChangeTimer += Time.deltaTime;
+        
+        if (verticalChangeTimer >= verticalChangeInterval)
+        {
+            targetHoverHeight = hoverHeight + Random.Range(-verticalVariationAmount, verticalVariationAmount);
+            verticalChangeTimer = 0f;
         }
     }
 
@@ -195,6 +298,8 @@ public class HoverwaspAI : BaseEnemy, IDamageable
 
     private void UpdateStrafeTimer()
     {
+        if (currentState == HoverwaspState.Aiming || currentState == HoverwaspState.Shooting) return;
+
         strafeTimer += Time.deltaTime;
         if (strafeTimer >= strafeChangeInterval)
         {
@@ -284,6 +389,10 @@ public class HoverwaspAI : BaseEnemy, IDamageable
             case HoverwaspState.Combat:
                 HandleCombatState(distanceToPlayer);
                 break;
+            case HoverwaspState.Aiming:
+            case HoverwaspState.Shooting:
+                // Driven by AimAndBurst coroutine
+                break;
             case HoverwaspState.Dead:
                 break;
         }
@@ -293,9 +402,7 @@ public class HoverwaspAI : BaseEnemy, IDamageable
     {
         float detectionRange = config != null ? config.detectionRange : 15f;
         if (distanceToPlayer <= detectionRange && HasLineOfSightToPlayer())
-        {
             currentState = HoverwaspState.Combat;
-        }
     }
 
     private void HandleCombatState(float distanceToPlayer)
@@ -307,22 +414,82 @@ public class HoverwaspAI : BaseEnemy, IDamageable
             return;
         }
 
-        float fireCooldown = config != null ? config.fireCooldown : 1.5f;
-        if (Time.time >= lastFireTime + fireCooldown)
-        {
-            FireProjectile();
-            lastFireTime = Time.time;
-        }
+        float fireCooldown = config != null ? config.fireCooldown : 2f;
+        if (!isShooting && Time.time >= lastFireTime + fireCooldown)
+            StartCoroutine(AimAndBurst());
     }
 
-    private void FireProjectile()
+    private IEnumerator AimAndBurst()
+    {
+        if (isShooting || firePoint == null) yield break;
+
+        isShooting = true;
+        currentState = HoverwaspState.Aiming;
+
+        // Snap and lock rotation towards player
+        Vector3 flatDir = player.transform.position - transform.position;
+        flatDir.y = 0f;
+        if (flatDir.sqrMagnitude > 0.001f)
+            transform.rotation = Quaternion.LookRotation(flatDir);
+
+        lockedAimDirection = (player.transform.position - firePoint.position).normalized;
+
+        // Hold laser on target
+        yield return new WaitForSeconds(aimDuration);
+
+        // Burst fire
+        currentState = HoverwaspState.Shooting;
+        laserRenderer.enabled = false;
+
+        for (int i = 0; i < burstCount; i++)
+        {
+            if (isExploded) break;
+            FireSingleShot();
+            yield return new WaitForSeconds(burstInterval);
+        }
+
+        lastFireTime = Time.time;
+        isShooting = false;
+        currentState = HoverwaspState.Combat;
+    }
+
+    private void FireSingleShot()
     {
         if (config == null || config.projectilePrefab == null || firePoint == null) return;
 
-        Vector3 directionToPlayer = (player.transform.position - firePoint.position).normalized;
-        Quaternion projectileRotation = Quaternion.LookRotation(directionToPlayer);
+        Quaternion rot = Quaternion.LookRotation(lockedAimDirection);
+        GameObject projectile = Instantiate(config.projectilePrefab, firePoint.position, rot);
 
-        Instantiate(config.projectilePrefab, firePoint.position, projectileRotation);
+        EnemyProjectile ep = projectile.GetComponent<EnemyProjectile>();
+        if (ep != null)
+        {
+            float pitch = fireSoundIndex % 2 == 0 ? 0.9f : 1.1f;
+            ep.SetPitch(pitch);
+            fireSoundIndex++;
+        }
+
+        if (muzzleFlash != null)
+            muzzleFlash.Play();
+    }
+
+    private void UpdateLaser()
+    {
+        if (laserRenderer == null || firePoint == null) return;
+
+        if (currentState != HoverwaspState.Aiming)
+        {
+            laserRenderer.enabled = false;
+            return;
+        }
+
+        laserRenderer.enabled = true;
+
+        Vector3 end = firePoint.position + lockedAimDirection * laserMaxDistance;
+        if (Physics.Raycast(firePoint.position, lockedAimDirection, out RaycastHit hit, laserMaxDistance))
+            end = hit.point;
+
+        laserRenderer.SetPosition(0, firePoint.position);
+        laserRenderer.SetPosition(1, end);
     }
 
     private bool HasLineOfSightToPlayer()
@@ -439,23 +606,18 @@ public class HoverwaspAI : BaseEnemy, IDamageable
     {
         if (isExploded) return;
         isExploded = true;
+        isShooting = false;
 
-        if (healthBarInstance)
-        {
-            healthBarInstance.SetActive(false);
-        }
+        if (laserRenderer != null) laserRenderer.enabled = false;
+        if (healthBarInstance) healthBarInstance.SetActive(false);
 
         HandleDeath();
 
-        foreach (var collider in GetComponents<Collider>())
-        {
-            collider.enabled = false;
-        }
+        foreach (var col in GetComponents<Collider>())
+            col.enabled = false;
 
         if (deathEffect != null)
-        {
             Instantiate(deathEffect, transform.position, Quaternion.identity);
-        }
 
         float cleanupTime = config != null ? config.deathCleanupTime : 3f;
         Destroy(gameObject, cleanupTime);
@@ -510,5 +672,7 @@ public enum HoverwaspState
 {
     Idle,
     Combat,
+    Aiming,
+    Shooting,
     Dead
 }

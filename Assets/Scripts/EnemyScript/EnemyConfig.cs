@@ -11,7 +11,10 @@ public class EnemyConfig : ScriptableObject
 
     [Header("Explosion Settings")]
     public bool canExplode = true;
-    public float explosionRange = 2f;
+    [Tooltip("Distance from player to trigger explosion")]
+    public float explosionTriggerRange = 2f;
+    [Tooltip("Radius of explosion damage")]
+    public float explosionDamageRadius = 5f;
     public float explosionDamage = 50f;
     public float explosionForce = 10f;
 

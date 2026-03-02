@@ -17,11 +17,12 @@ MonoBehaviour:
   fireCooldown: 1.5
   projectilePrefab: {fileID: 0}
   canExplode: 1
-  explosionRange: 4
-  explosionDamage: 50
+  explosionTriggerRange: 2
+  explosionDamageRadius: 10
+  explosionDamage: 25
   explosionForce: 100
   maxHealth: 300
-  moveSpeed: 18
+  moveSpeed: 13
   acceleration: 8
   detectionRange: 10000
   chaseRange: 10000
@@ -32,4 +33,4 @@ MonoBehaviour:
   attackRange: 2
   attackRadius: 1.5
   attackCooldown: 2
-  deathCleanupTime: 3
+  deathCleanupTime: 1

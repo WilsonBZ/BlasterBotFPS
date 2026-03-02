@@ -7,16 +7,15 @@ public class HitFlashEffect : MonoBehaviour
     [Header("Flash Settings")]
     [SerializeField] private Color flashColor = Color.white;
     [SerializeField] private float flashDuration = 0.1f;
-    [SerializeField] private AnimationCurve flashCurve = AnimationCurve.EaseInOut(0, 1, 1, 0);
     
-    [Header("Material Settings")]
-    [SerializeField] private string emissionProperty = "_EmissionColor";
-    [SerializeField] private bool useEmission = true;
-    
-    private List<Material> materials = new List<Material>();
-    private List<Color> originalColors = new List<Color>();
+    private List<Material> materialInstances = new List<Material>();
+    private List<Color> originalBaseColors = new List<Color>();
     private List<Color> originalEmissionColors = new List<Color>();
+    private Renderer[] renderers;
     private Coroutine flashCoroutine;
+    
+    private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor");
+    private static readonly int EmissionColorProperty = Shader.PropertyToID("_EmissionColor");
     
     private void Awake()
     {
@@ -25,26 +24,28 @@ public class HitFlashEffect : MonoBehaviour
     
     private void CacheMaterials()
     {
-        Renderer[] renderers = GetComponentsInChildren<Renderer>();
+        renderers = GetComponentsInChildren<Renderer>(true);
         
         foreach (Renderer renderer in renderers)
         {
-            foreach (Material mat in renderer.materials)
+            Material[] materials = renderer.materials;
+            
+            foreach (Material mat in materials)
             {
-                materials.Add(mat);
+                materialInstances.Add(mat);
                 
-                if (mat.HasProperty("_Color"))
+                if (mat.HasProperty(BaseColorProperty))
                 {
-                    originalColors.Add(mat.color);
+                    originalBaseColors.Add(mat.GetColor(BaseColorProperty));
                 }
                 else
                 {
-                    originalColors.Add(Color.white);
+                    originalBaseColors.Add(Color.white);
                 }
                 
-                if (useEmission && mat.HasProperty(emissionProperty))
+                if (mat.HasProperty(EmissionColorProperty))
                 {
-                    originalEmissionColors.Add(mat.GetColor(emissionProperty));
+                    originalEmissionColors.Add(mat.GetColor(EmissionColorProperty));
                 }
                 else
                 {
@@ -52,10 +53,20 @@ public class HitFlashEffect : MonoBehaviour
                 }
             }
         }
+        
+        Debug.Log($"HitFlashEffect cached {materialInstances.Count} materials from {renderers.Length} renderers");
     }
     
     public void Flash()
     {
+        if (materialInstances.Count == 0)
+        {
+            Debug.LogWarning("HitFlashEffect has no materials cached!");
+            return;
+        }
+        
+        Debug.Log($"HitFlashEffect.Flash() called on {gameObject.name}");
+        
         if (flashCoroutine != null)
         {
             StopCoroutine(flashCoroutine);
@@ -66,59 +77,38 @@ public class HitFlashEffect : MonoBehaviour
     
     private IEnumerator FlashCoroutine()
     {
-        SetFlashAmount(1f);
+        SetFlashColor();
         
-        float elapsed = 0f;
-        while (elapsed < flashDuration)
-        {
-            elapsed += Time.deltaTime;
-            float normalizedTime = elapsed / flashDuration;
-            float flashAmount = flashCurve.Evaluate(normalizedTime);
-            
-            SetFlashAmount(flashAmount);
-            
-            yield return null;
-        }
+        yield return new WaitForSeconds(flashDuration);
         
-        SetFlashAmount(0f);
+        ResetColors();
         flashCoroutine = null;
     }
     
-    private void SetFlashAmount(float amount)
+    private void SetFlashColor()
     {
-        for (int i = 0; i < materials.Count; i++)
+        for (int i = 0; i < materialInstances.Count; i++)
         {
-            if (materials[i] == null) continue;
+            if (materialInstances[i] == null) continue;
             
-            Color targetColor = Color.Lerp(originalColors[i], flashColor, amount);
-            materials[i].color = targetColor;
+            materialInstances[i].SetColor(BaseColorProperty, flashColor);
+            materialInstances[i].SetColor(EmissionColorProperty, flashColor * 2f);
+        }
+    }
+    
+    private void ResetColors()
+    {
+        for (int i = 0; i < materialInstances.Count; i++)
+        {
+            if (materialInstances[i] == null) continue;
             
-            if (useEmission && materials[i].HasProperty(emissionProperty))
-            {
-                Color emissionColor = Color.Lerp(originalEmissionColors[i], flashColor * 2f, amount);
-                materials[i].SetColor(emissionProperty, emissionColor);
-            }
+            materialInstances[i].SetColor(BaseColorProperty, originalBaseColors[i]);
+            materialInstances[i].SetColor(EmissionColorProperty, originalEmissionColors[i]);
         }
     }
     
     private void OnDestroy()
     {
-        if (flashCoroutine != null)
-        {
-            StopCoroutine(flashCoroutine);
-        }
-        
-        for (int i = 0; i < materials.Count; i++)
-        {
-            if (materials[i] != null)
-            {
-                materials[i].color = originalColors[i];
-                
-                if (useEmission && materials[i].HasProperty(emissionProperty))
-                {
-                    materials[i].SetColor(emissionProperty, originalEmissionColors[i]);
-                }
-            }
-        }
+        ResetColors();
     }
 }
