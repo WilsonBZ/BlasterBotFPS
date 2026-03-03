@@ -23,7 +23,10 @@ public class Projectile : MonoBehaviour
     [SerializeField] private AudioClip fireSound;
 
     private Rigidbody rb;
-    
+
+    // Player weapons must never damage the player.
+    private static bool IsPlayer(GameObject go) => go.CompareTag("Player");
+
     public void SetPitch(float pitch)
     {
         if (audioSource != null)
@@ -70,6 +73,8 @@ public class Projectile : MonoBehaviour
 
     private void HandleCollision(RaycastHit hit)
     {
+        if (IsPlayer(hit.collider.gameObject)) return;
+
         IDamageable damageable = hit.collider.GetComponent<IDamageable>();
 
         if (damageable != null)
@@ -86,6 +91,8 @@ public class Projectile : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
+        if (IsPlayer(collision.gameObject)) return;
+
         StartCoroutine(HitStop());
 
         IDamageable damageable = collision.gameObject.GetComponent<IDamageable>();
@@ -106,6 +113,7 @@ public class Projectile : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         if (other.gameObject.layer == LayerMask.NameToLayer("Ignore Raycast")) return;
+        if (IsPlayer(other.gameObject)) return;
 
         IDamageable damageable = other.GetComponent<IDamageable>();
 

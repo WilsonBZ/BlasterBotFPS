@@ -17,52 +17,49 @@ public class ImpactSphere : MonoBehaviour
     private void Start()
     {
         CreateSphere();
+        Destroy(gameObject, lifetime);
     }
     
     private void CreateSphere()
     {
         sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        sphere.transform.position = transform.position;
-        sphere.transform.localScale = Vector3.one * 0.1f;
+
+        // Child of self — destroyed automatically when this GameObject is destroyed
+        sphere.transform.SetParent(transform);
+        sphere.transform.localPosition = Vector3.zero;
+        sphere.transform.localScale    = Vector3.one * 0.1f;
         
         Destroy(sphere.GetComponent<Collider>());
-        
-        material = baseMaterial != null
-            ? new Material(baseMaterial)
-            : new Material(Shader.Find("Universal Render Pipeline/Unlit"));
 
+        if (baseMaterial == null)
+        {
+            Debug.LogError("ImpactSphere: baseMaterial not assigned. Assign VFX_ImpactSphere.mat in the prefab.");
+            return;
+        }
+
+        material = new Material(baseMaterial);
         material.SetColor("_BaseColor", sphereColor);
-        
         sphere.GetComponent<Renderer>().material = material;
-        
-        Destroy(gameObject, lifetime);
     }
     
     private void Update()
     {
-        if (sphere == null) return;
+        if (sphere == null || material == null) return;
         
         elapsed += Time.deltaTime;
-        float progress = elapsed / lifetime;
+        float t = Mathf.Clamp01(elapsed / lifetime);
         
-        float scale = Mathf.Lerp(0.1f, maxScale, progress);
-        sphere.transform.localScale = Vector3.one * scale;
+        sphere.transform.localScale = Vector3.one * Mathf.Lerp(0.1f, maxScale, t);
         
-        Color color = material.GetColor("_BaseColor");
-        color.a = Mathf.Lerp(0.8f, 0f, progress);
-        material.SetColor("_BaseColor", color);
+        Color c = material.GetColor("_BaseColor");
+        c.a = Mathf.Lerp(0.8f, 0f, t);
+        material.SetColor("_BaseColor", c);
     }
     
     private void OnDestroy()
     {
-        if (sphere != null)
-        {
-            Destroy(sphere);
-        }
-        
+        // sphere is a child — Unity destroys it automatically with this GameObject
         if (material != null)
-        {
             Destroy(material);
-        }
     }
 }

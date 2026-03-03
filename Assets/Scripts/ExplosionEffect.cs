@@ -58,18 +58,21 @@ public class ExplosionEffect : MonoBehaviour
 
         Destroy(shockwave.GetComponent<Collider>());
 
-        Material mat = shockwaveMaterial != null
-            ? new Material(shockwaveMaterial)
-            : new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+        if (shockwaveMaterial == null)
+        {
+            Debug.LogError("ExplosionEffect: shockwaveMaterial not assigned. Assign VFX_ExplosionSphere.mat in the prefab.");
+            return;
+        }
 
+        Material mat = new Material(shockwaveMaterial);
         mat.SetColor("_BaseColor", shockwaveColor);
-
         shockwave.GetComponent<Renderer>().material = mat;
 
         ShockwaveExpander expander = shockwave.AddComponent<ShockwaveExpander>();
         expander.maxScale    = shockwaveMaxScale;
         expander.expandSpeed = shockwaveSpeed;
         expander.duration    = 0.5f;
+        expander.SetMaterial(mat); // pass direct reference — avoids a second material instance
     }
 
     private void CreateLightFlash(Vector3 position)
@@ -117,9 +120,17 @@ public class ShockwaveExpander : MonoBehaviour
     private float    elapsed;
     private Material material;
 
+    /// <summary>
+    /// Supply the already-instanced material so we don't create a second copy
+    /// via GetComponent<Renderer>().material in Start.
+    /// </summary>
+    public void SetMaterial(Material mat) => material = mat;
+
     private void Start()
     {
-        material = GetComponent<Renderer>().material;
+        // Only fall back to renderer.material if SetMaterial was not called
+        if (material == null)
+            material = GetComponent<Renderer>().material;
     }
 
     private void Update()
