@@ -15,13 +15,13 @@ MonoBehaviour:
   active: 1
   color:
     m_OverrideState: 1
-    m_Value: {r: 0.13207549, g: 0.12444772, b: 0.12036313, a: 1}
+    m_Value: {r: 0.16226411, g: 0.16226411, b: 0.16226411, a: 1}
   center:
     m_OverrideState: 0
     m_Value: {x: 0.5, y: 0.5}
   intensity:
     m_OverrideState: 1
-    m_Value: 0.531
+    m_Value: 0.544
   smoothness:
     m_OverrideState: 1
     m_Value: 0.27
@@ -82,13 +82,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   active: 1
   lift:
-    m_OverrideState: 1
+    m_OverrideState: 0
     m_Value: {x: 0.972584, y: 1, z: 0.98227787, w: 0.0000000032848044}
   gamma:
     m_OverrideState: 1
-    m_Value: {x: 1, y: 0.9556576, z: 0.8800465, w: 0.25951225}
+    m_Value: {x: 1, y: 0.99483997, z: 0.9990016, w: 0.101291984}
   gain:
-    m_OverrideState: 1
+    m_OverrideState: 0
     m_Value: {x: 1, y: 0.95094776, z: 0.9924066, w: 0.47695377}
 --- !u!114 &-5019270734282903656
 MonoBehaviour:
@@ -108,10 +108,10 @@ MonoBehaviour:
     m_Value: {x: 1, y: 0.97034675, z: 0.93644494, w: -0.17846434}
   midtones:
     m_OverrideState: 1
-    m_Value: {x: 1, y: 0.9704741, z: 0.96071494, w: -0.65900403}
+    m_Value: {x: 1, y: 0.9704741, z: 0.96071494, w: 0.13551675}
   highlights:
     m_OverrideState: 1
-    m_Value: {x: 1, y: 0.9681809, z: 0.9748255, w: -0.2765523}
+    m_Value: {x: 1, y: 0.9681809, z: 0.9748255, w: -0.19436018}
   shadowsStart:
     m_OverrideState: 0
     m_Value: 0
@@ -385,19 +385,19 @@ MonoBehaviour:
   active: 1
   postExposure:
     m_OverrideState: 1
-    m_Value: 0.24
+    m_Value: 0.66
   contrast:
     m_OverrideState: 1
-    m_Value: 8.02
+    m_Value: 17
   colorFilter:
     m_OverrideState: 1
     m_Value: {r: 1, g: 0.9803922, b: 0.9803922, a: 1}
   hueShift:
     m_OverrideState: 0
-    m_Value: 67
+    m_Value: 153
   saturation:
-    m_OverrideState: 0
-    m_Value: 0.64
+    m_OverrideState: 1
+    m_Value: 39
 --- !u!114 &5306497793838978174
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -413,7 +413,7 @@ MonoBehaviour:
   active: 1
   temperature:
     m_OverrideState: 1
-    m_Value: 26
+    m_Value: -8
   tint:
     m_OverrideState: 1
     m_Value: 5
