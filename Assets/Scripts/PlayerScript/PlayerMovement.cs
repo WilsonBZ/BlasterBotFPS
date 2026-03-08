@@ -27,7 +27,6 @@ public class PlayerMovement : MonoBehaviour
 
     [Header("Slide Settings")]
     [SerializeField] private float slideSpeed = 20f;
-    //[SerializeField] private float maxSlideSpeed = 25f;
     [SerializeField] private float slideDuration = 1f;
     [SerializeField] private float slideCooldown = 0.5f;
 
