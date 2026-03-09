@@ -147,7 +147,7 @@ Light:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8212221339860360197}
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 11
   m_Type: 2
   m_Color: {r: 0.4, g: 0.9, b: 1, a: 1}
@@ -326,16 +326,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 28
   lifetime: 6
-  minExplosionRadius: 1.5
+  minExplosionRadius: 0.5
   maxExplosionRadius: 6
-  explosionForce: 300
+  explosionForce: 100
   damageableLayers:
     serializedVersion: 2
     m_Bits: 193
-  explosionPrefab: {fileID: 2718306287638060628, guid: c7cf24b0b751ca24fbd440c6a8153070, type: 3}
+  explosionPrefab: {fileID: 2718306287638060628, guid: c6de63f112d0e514789a4d8c3e8fbf81, type: 3}
   baseMaterial: {fileID: 2100000, guid: c5a80614cf9974e4ea29a882d7de914e, type: 2}
-  minChargeColor: {r: 0.4, g: 0.9, b: 1, a: 0.9}
-  maxChargeColor: {r: 1, g: 0.35, b: 0.05, a: 0.9}
+  minChargeColor: {r: 0.7746084, g: 0.9394939, b: 0.9716981, a: 0.9}
+  maxChargeColor: {r: 0.05098039, g: 1, b: 0.9363488, a: 0.9}
   trail: {fileID: 5447028109218692884}
   projectileLight: {fileID: 3097109972024220448}
   lightIntensity: 4
