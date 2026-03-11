@@ -22,9 +22,6 @@ public class AdditiveSceneManager : MonoBehaviour
     [Range(1, 3)]
     public int preloadAhead = 1;
 
-    [Tooltip("Delay in seconds before unloading the previous room after the player transitions.")]
-    public float unloadDelay = 1.5f;
-
     /// <summary>Index of the room the player is currently in.</summary>
     public int CurrentRoomIndex { get; private set; } = -1;
 
@@ -77,10 +74,10 @@ public class AdditiveSceneManager : MonoBehaviour
             return;
         }
 
-        StartCoroutine(TransitionToRoom(clearedIndex, nextIndex));
+        StartCoroutine(TransitionToRoom(nextIndex));
     }
 
-    private IEnumerator TransitionToRoom(int fromIndex, int toIndex)
+    private IEnumerator TransitionToRoom(int toIndex)
     {
         isTransitioning = true;
         CurrentRoomIndex = toIndex;
@@ -90,18 +87,6 @@ public class AdditiveSceneManager : MonoBehaviour
         {
             yield return LoadRoomAsync(roomSceneNames[i]);
         }
-
-        // Give the player time to physically move into the new room.
-        yield return new WaitForSeconds(unloadDelay);
-
-        // Unload rooms behind the player (keep at most one room behind for safety).
-        for (int i = 0; i < fromIndex; i++)
-        {
-            UnloadRoom(roomSceneNames[i]);
-        }
-
-        // Unload the room the player just left.
-        UnloadRoom(roomSceneNames[fromIndex]);
 
         isTransitioning = false;
     }
@@ -131,6 +116,15 @@ public class AdditiveSceneManager : MonoBehaviour
             yield break;
         }
 
+        // Also check if Unity already has this scene loaded (e.g. open in the editor when Play is pressed).
+        Scene existingScene = SceneManager.GetSceneByName(sceneName);
+        if (existingScene.isLoaded)
+        {
+            loadedRoomScenes.Add(sceneName);
+            Debug.Log($"[AdditiveSceneManager] Scene '{sceneName}' already loaded, skipping duplicate load.");
+            yield break;
+        }
+
         if (!Application.CanStreamedLevelBeLoaded(sceneName))
         {
             Debug.LogError($"[AdditiveSceneManager] Scene '{sceneName}' is not in Build Settings.");
@@ -148,17 +142,5 @@ public class AdditiveSceneManager : MonoBehaviour
         }
 
         Debug.Log($"[AdditiveSceneManager] Loaded room: {sceneName}");
-    }
-
-    private void UnloadRoom(string sceneName)
-    {
-        if (!loadedRoomScenes.Contains(sceneName))
-        {
-            return;
-        }
-
-        loadedRoomScenes.Remove(sceneName);
-        SceneManager.UnloadSceneAsync(sceneName);
-        Debug.Log($"[AdditiveSceneManager] Unloaded room: {sceneName}");
     }
 }

@@ -17,7 +17,11 @@ public class SlidingDoubleDoor : MonoBehaviour
     [Header("Settings")]
     public float openDistance = 4f;
     public float doorSpeed = 4f;
-    public Transform player;
+
+    [Tooltip("Tag used to find the player at runtime. Avoids cross-scene direct references.")]
+    public string playerTag = "Player";
+
+    private Transform player;
 
     [Header("Lock Settings")]
     [Tooltip("If true, door will not open even when player is nearby")]
@@ -41,11 +45,31 @@ public class SlidingDoubleDoor : MonoBehaviour
         leftClosedPos = leftDoor.localPosition;
         rightClosedPos = rightDoor.localPosition;
         prevIsOpen = isOpen;
+
+        FindPlayer();
+    }
+
+    /// <summary>Finds the player by tag. Safe to call again if the player spawns late.</summary>
+    private void FindPlayer()
+    {
+        GameObject playerObject = GameObject.FindWithTag(playerTag);
+        if (playerObject != null)
+        {
+            player = playerObject.transform;
+        }
+        else
+        {
+            Debug.LogWarning($"[SlidingDoubleDoor] No GameObject with tag '{playerTag}' found. Door will retry each frame until found.");
+        }
     }
 
     void Update()
     {
-        if (player == null) return;
+        if (player == null)
+        {
+            FindPlayer();
+            return;
+        }
 
         float dist = Vector3.Distance(player.position, transform.position);
 
