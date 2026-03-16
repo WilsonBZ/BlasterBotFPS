@@ -20,8 +20,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: New Material
-  m_Shader: {fileID: -6465566751694194690, guid: 0d7de34eca869774aa7869858bcdaf6a, type: 3}
+  m_Name: water
+  m_Shader: {fileID: -6465566751694194690, guid: f8949b4f81e85a444a67285c75587bdb, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -29,7 +29,7 @@ Material:
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 3000
+  m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses:
   - MOTIONVECTORS
@@ -61,12 +61,20 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _Intersection_Foam_Texture:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _MainTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
         m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Normals_Texture:
+        m_Texture: {fileID: 2800000, guid: ead3be67941d84de8806e2bdbc4a2d24, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _OcclusionMap:
@@ -79,6 +87,18 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _SpecGlossMap:
         m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Surface_Foam_Texture:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _main_normal:
+        m_Texture: {fileID: 2800000, guid: c21511cdc86c86847bdae740c8b071da, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _second_normal:
+        m_Texture: {fileID: 2800000, guid: 9f04018992f98ef4997b6883c48cc0f8, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - unity_Lightmaps:
@@ -95,6 +115,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - WORLD_SPACE_UV: 0
     - _AddPrecomputedVelocity: 0
     - _AlphaClip: 0
     - _AlphaToMask: 0
@@ -105,6 +126,7 @@ Material:
     - _ClearCoatSmoothness: 0
     - _Cull: 2
     - _Cutoff: 0.5
+    - _Depth_Fade_Distance: 0.15
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
@@ -113,24 +135,63 @@ Material:
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
+    - _Horizon_Distance: 20
+    - _Intersection_Foam_Color_Blend: 0
+    - _Intersection_Foam_Cutoff: 0.5
+    - _Intersection_Foam_Depth: 1
+    - _Intersection_Foam_Direction: 0
+    - _Intersection_Foam_Fade: 0
+    - _Intersection_Foam_Speed: 0
+    - _Intersection_Foam_Tiling: 1
+    - _Lighting_Hardness: 0
+    - _Lighting_Smoothness: 1
     - _Metallic: 0
+    - _Normals_Scale: 0.2
+    - _Normals_Speed: 0.2
+    - _Normals_Strength: 1
     - _OcclusionStrength: 1
     - _Parallax: 0.005
+    - _QueueControl: 0
     - _QueueOffset: 0
     - _ReceiveShadows: 1
+    - _Refraction_Scale: 0.1
+    - _Refraction_Speed: 0.1
+    - _Refraction_Strength: 0
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _SrcBlendAlpha: 1
     - _Surface: 0
+    - _Surface_Foam_Color_Blend: 0
+    - _Surface_Foam_Direction: 0
+    - _Surface_Foam_Distortion: 0
+    - _Surface_Foam_Speed: 0
+    - _Surface_Foam_Tiling: 1
+    - _Wave_Length: 1
+    - _Wave_Speed: 0.1
+    - _Wave_Steepness: 0
     - _WorkflowMode: 1
     - _XRMotionVectorsPass: 1
     - _ZWrite: 1
+    - _depth_1: 0.44
+    - _displacement: 0.5
+    - _normal_strenngth: 0
+    - _smoothness: 0.5
+    - _strength_1: 0.37
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Deep_Color: {r: 0.07058821, g: 0.12156857, b: 0.25490198, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _Horizon_Color: {r: 0, g: 0, b: 0, a: 0}
+    - _Intersection_Foam_Color: {r: 0, g: 0, b: 0, a: 0}
+    - _Shallow_Color: {r: 0.48627448, g: 1, b: 0.8941177, a: 0.7843137}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
+    - _Specular_Color: {r: 0, g: 0, b: 0, a: 0}
+    - _Surface_Foam_Color: {r: 0, g: 0, b: 0, a: 0}
+    - _Wave_Directions: {r: 0, g: 0.5, b: 1, a: 0.2}
+    - _deep_water_color: {r: 0.10464216, g: 0.38748446, b: 0.7811319, a: 1}
+    - _shallow_water_color: {r: 0, g: 0.7763453, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
