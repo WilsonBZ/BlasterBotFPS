@@ -23,22 +23,32 @@ public class Projectile : MonoBehaviour
     [SerializeField] private AudioClip fireSound;
 
     private Rigidbody rb;
+    private int nonPlayerLayerMask;
+    private int playerLayer;
 
-    // Player weapons must never damage the player.
-    private static bool IsPlayer(GameObject go) => go.CompareTag("Player");
+    /// <summary>Returns true if the GameObject is on the Player layer or tagged as Player.</summary>
+    private bool IsPlayer(GameObject go) =>
+        go.layer == playerLayer || go.CompareTag("Player");
 
+    /// <summary>Set the pitch of the fire audio source.</summary>
     public void SetPitch(float pitch)
     {
         if (audioSource != null)
-        {
             audioSource.pitch = pitch;
-        }
     }
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+
+        playerLayer = LayerMask.NameToLayer("Player");
+
+        // Build a layermask that excludes the Player layer so SphereCast never registers player colliders.
+        nonPlayerLayerMask = Physics.DefaultRaycastLayers & ~(1 << playerLayer);
+
+        // Disable collisions between this projectile and every collider on the Player layer at the physics matrix level.
+        Physics.IgnoreLayerCollision(gameObject.layer, playerLayer, true);
 
         Destroy(gameObject, lifetime);
     }
@@ -48,24 +58,20 @@ public class Projectile : MonoBehaviour
         rb.linearVelocity = transform.forward * Speed;
 
         if (audioSource != null && fireSound != null)
-        {
             audioSource.PlayOneShot(fireSound);
-        }
     }
 
     private void Update()
     {
         if (rb.linearVelocity.magnitude < Speed * 0.9f)
-        {
             rb.linearVelocity = rb.linearVelocity.normalized * Speed;
-        }
     }
 
     private void FixedUpdate()
     {
         if (Physics.SphereCast(transform.position, collisionCheckRadius,
             transform.forward, out RaycastHit hit, Speed * Time.fixedDeltaTime,
-            Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+            nonPlayerLayerMask, QueryTriggerInteraction.Ignore))
         {
             HandleCollision(hit);
         }

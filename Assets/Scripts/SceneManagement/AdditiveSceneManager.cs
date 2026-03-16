@@ -91,6 +91,42 @@ public class AdditiveSceneManager : MonoBehaviour
         isTransitioning = false;
     }
 
+    /// <summary>
+    /// Unloads all tracked room scenes and reloads from index 0.
+    /// Called by <see cref="FloorProgressManager"/> when the player advances a floor.
+    /// </summary>
+    public IEnumerator ResetToStart()
+    {
+        isTransitioning = true;
+
+        List<string> toUnload = new List<string>(loadedRoomScenes);
+        loadedRoomScenes.Clear();
+
+        foreach (string sceneName in toUnload)
+        {
+            Scene scene = SceneManager.GetSceneByName(sceneName);
+            if (scene.isLoaded)
+            {
+                yield return SceneManager.UnloadSceneAsync(sceneName);
+                Debug.Log($"[AdditiveSceneManager] Unloaded for reset: {sceneName}");
+            }
+        }
+
+        CurrentRoomIndex = 0;
+
+        if (roomSceneNames.Count > 0)
+        {
+            yield return LoadRoomAsync(roomSceneNames[0]);
+
+            for (int i = 1; i <= Mathf.Min(preloadAhead, roomSceneNames.Count - 1); i++)
+            {
+                yield return LoadRoomAsync(roomSceneNames[i]);
+            }
+        }
+
+        isTransitioning = false;
+    }
+
     /// <summary>Loads a room scene by its index in <see cref="roomSceneNames"/>.</summary>
     public void LoadRoomAt(int index)
     {

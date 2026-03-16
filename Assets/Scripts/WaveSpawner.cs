@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
@@ -155,6 +155,14 @@ public class WaveSpawner : MonoBehaviour
 
         OnAllWavesCompleted?.Invoke();
         runCoroutine = null;
+    }
+
+    public void ApplyEnemyCountMultiplier(float multiplier)
+    {
+        foreach (Wave wave in waves)
+        {
+            wave.enemyCount = Mathf.Max(1, Mathf.RoundToInt(wave.enemyCount * multiplier));
+        }
     }
 
     private GameObject ChooseEnemyPrefab()

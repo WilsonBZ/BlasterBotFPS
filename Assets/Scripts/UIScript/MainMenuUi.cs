@@ -5,7 +5,7 @@ public class MainMenuUI : MonoBehaviour
 {
     public void StartGame()
     {
-        SceneManager.LoadScene("CoreLoop");
+        SceneManager.LoadScene("03_Generator Room 1");
     }
 
     // Called by Quit button
