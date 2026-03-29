@@ -1,36 +1,3 @@
-%YAML 1.1
-%TAG !u! tag:unity3d.com,2011:
---- !u!114 &11400000
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 719de01ba98192d4eb4d817a605bce86, type: 3}
-  m_Name: BallEnemyConfig
-  m_EditorClassIdentifier: 
-  isRanged: 0
-  preferredDistance: 10
-  fireCooldown: 1.5
-  projectilePrefab: {fileID: 0}
-  canExplode: 1
-  explosionTriggerRange: 2
-  explosionDamageRadius: 10
-  explosionDamage: 25
-  explosionForce: 100
-  maxHealth: 300
-  moveSpeed: 8
-  acceleration: 8
-  detectionRange: 10000
-  chaseRange: 10000
-  fleeDistance: 10
-  fleeDuration: 3
-  fleeOnHit: 0
-  attackDamage: 15
-  attackRange: 2
-  attackRadius: 1.5
-  attackCooldown: 2
-  deathCleanupTime: 1
+version https://git-lfs.github.com/spec/v1
+oid sha256:b564acbd5e9e5ae6cef1486eb11b399e8f127b54e1c77e3ed1a0051d5a9c937d
+size 889

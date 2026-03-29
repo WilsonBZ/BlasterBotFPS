@@ -1,36 +1,3 @@
-%YAML 1.1
-%TAG !u! tag:unity3d.com,2011:
---- !u!114 &11400000
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 719de01ba98192d4eb4d817a605bce86, type: 3}
-  m_Name: HoverwaspConfig
-  m_EditorClassIdentifier: 
-  isRanged: 1
-  preferredDistance: 8
-  fireCooldown: 1.2
-  projectilePrefab: {fileID: 179324710382678566, guid: 4bade263e1026c5468950c60b53056c4, type: 3}
-  canExplode: 0
-  explosionTriggerRange: 2
-  explosionDamageRadius: 5
-  explosionDamage: 0
-  explosionForce: 0
-  maxHealth: 60
-  moveSpeed: 4
-  acceleration: 6
-  detectionRange: 15
-  chaseRange: 25
-  fleeDistance: 5
-  fleeDuration: 2
-  fleeOnHit: 0
-  attackDamage: 0
-  attackRange: 0
-  attackRadius: 0
-  attackCooldown: 1.2
-  deathCleanupTime: 3
+version https://git-lfs.github.com/spec/v1
+oid sha256:1ead611d6ead8020a75d501ac9fadf5eea5759d9318c4066fb79eda13d70a23f
+size 941
