@@ -108,8 +108,9 @@ MonoBehaviour:
   useCrosshairWhenCentered: 1
   muzzleFlash: {fileID: 0}
   muzzleFlashVFX: {fileID: 8541431059271982030}
+  muzzleVFXGraph: {fileID: 6010722659431565105}
   audioSource: {fileID: 6641873479692927023}
-  shootSound: {fileID: 8300000, guid: 6cd42037ffe32d843806268e0a57b186, type: 3}
+  shootSound: {fileID: 8300000, guid: 2df04887b2f17b54db340f9bfdf88308, type: 3}
   pitchVariation: 0.1
   recoilAngle: 1.5
   recoilRandomness: 0.2
@@ -253,7 +254,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 940002021365629669, guid: 72e1a20d6d8cb794a9115aef25464e94, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5741866040794373448}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 3878044617693227122, guid: 72e1a20d6d8cb794a9115aef25464e94, type: 3}
       insertIndex: -1
@@ -299,4 +303,71 @@ Transform:
 AudioSource:
   m_CorrespondingSourceObject: {fileID: 8397231589570757887, guid: 72e1a20d6d8cb794a9115aef25464e94, type: 3}
   m_PrefabInstance: {fileID: 2928563646053385424}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &7308129250543574825
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2715626341881300533}
+    m_Modifications:
+    - target: {fileID: 3081733641234530913, guid: 409f12b166da0f24cadd1d08f405e35c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3081733641234530913, guid: 409f12b166da0f24cadd1d08f405e35c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3081733641234530913, guid: 409f12b166da0f24cadd1d08f405e35c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3081733641234530913, guid: 409f12b166da0f24cadd1d08f405e35c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3081733641234530913, guid: 409f12b166da0f24cadd1d08f405e35c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3081733641234530913, guid: 409f12b166da0f24cadd1d08f405e35c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3081733641234530913, guid: 409f12b166da0f24cadd1d08f405e35c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3081733641234530913, guid: 409f12b166da0f24cadd1d08f405e35c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3081733641234530913, guid: 409f12b166da0f24cadd1d08f405e35c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3081733641234530913, guid: 409f12b166da0f24cadd1d08f405e35c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5359590795374829375, guid: 409f12b166da0f24cadd1d08f405e35c, type: 3}
+      propertyPath: m_Name
+      value: MuzzleVFX
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 409f12b166da0f24cadd1d08f405e35c, type: 3}
+--- !u!4 &5741866040794373448 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3081733641234530913, guid: 409f12b166da0f24cadd1d08f405e35c, type: 3}
+  m_PrefabInstance: {fileID: 7308129250543574825}
+  m_PrefabAsset: {fileID: 0}
+--- !u!2083052967 &6010722659431565105 stripped
+VisualEffect:
+  m_CorrespondingSourceObject: {fileID: 3891621062412458008, guid: 409f12b166da0f24cadd1d08f405e35c, type: 3}
+  m_PrefabInstance: {fileID: 7308129250543574825}
   m_PrefabAsset: {fileID: 0}

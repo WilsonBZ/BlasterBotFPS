@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.VFX;
 
 [RequireComponent(typeof(Collider))]
 public class ModularWeapon : MonoBehaviour
@@ -21,6 +22,8 @@ public class ModularWeapon : MonoBehaviour
     [Header("Effects")]
     public ParticleSystem muzzleFlash;
     public MuzzleFlash muzzleFlashVFX;
+    [Tooltip("VFX Graph muzzle flash child under FiringPoint (Firepoint.prefab). Driven via SendEvent OnPlay.")]
+    [SerializeField] private VisualEffect muzzleVFXGraph;
     public AudioSource audioSource;
     public AudioClip shootSound;
     [SerializeField] private float pitchVariation = 0.1f;
@@ -59,11 +62,19 @@ public class ModularWeapon : MonoBehaviour
     void Start()
     {
         CacheRecoilRootAndOriginal();
+        AutoFindMuzzleVFXGraph();
     }
 
     void OnEnable()
     {
         CacheRecoilRootAndOriginal();
+    }
+
+    /// <summary>Searches child of firePoint for a VisualEffect if not manually assigned.</summary>
+    private void AutoFindMuzzleVFXGraph()
+    {
+        if (muzzleVFXGraph != null || firePoint == null) return;
+        muzzleVFXGraph = firePoint.GetComponentInChildren<VisualEffect>(true);
     }
 
     void CacheRecoilRootAndOriginal()
@@ -123,17 +134,8 @@ public class ModularWeapon : MonoBehaviour
 
     protected virtual void FireInternal(Camera playerCamera)
     {
-        if (muzzleFlash != null) muzzleFlash.Play();
-        if (muzzleFlashVFX != null) muzzleFlashVFX.Play();
-        
-        if (audioSource && shootSound)
-        {
-            float pitch = 1f + (fireSoundIndex % 2 == 0 ? -pitchVariation : pitchVariation);
-            audioSource.pitch = pitch;
-            audioSource.PlayOneShot(shootSound);
-            fireSoundIndex++;
-        }
-
+        PlayMuzzleEffects();
+        PlayFireSound();
         ApplyRecoil();
 
         Vector3 forwardDir = (firePoint != null) ? firePoint.forward : transform.forward;
@@ -173,17 +175,8 @@ public class ModularWeapon : MonoBehaviour
 
     public void FireAtPoint(Vector3 aimPoint)
     {
-        if (muzzleFlash != null) muzzleFlash.Play();
-        if (muzzleFlashVFX != null) muzzleFlashVFX.Play();
-        
-        if (audioSource && shootSound)
-        {
-            float pitch = 1f + (fireSoundIndex % 2 == 0 ? -pitchVariation : pitchVariation);
-            audioSource.pitch = pitch;
-            audioSource.PlayOneShot(shootSound);
-            fireSoundIndex++;
-        }
-
+        PlayMuzzleEffects();
+        PlayFireSound();
         ApplyRecoil();
 
         Vector3 forwardDir = (firePoint != null)
@@ -204,6 +197,23 @@ public class ModularWeapon : MonoBehaviour
             if (rb != null)
                 rb.linearVelocity = dir * speed;
         }
+    }
+
+    /// <summary>Plays all muzzle flash effects — particle system, procedural VFX, and VFX Graph.</summary>
+    protected void PlayMuzzleEffects()
+    {
+        if (muzzleFlash != null) muzzleFlash.Play();
+        if (muzzleFlashVFX != null) muzzleFlashVFX.Play();
+        if (muzzleVFXGraph != null) muzzleVFXGraph.SendEvent("OnPlay");
+    }
+
+    private void PlayFireSound()
+    {
+        if (audioSource == null || shootSound == null) return;
+        float pitch = 1f + (fireSoundIndex % 2 == 0 ? -pitchVariation : pitchVariation);
+        audioSource.pitch = pitch;
+        audioSource.PlayOneShot(shootSound);
+        fireSoundIndex++;
     }
 
     protected void ApplyRecoil()
@@ -242,11 +252,13 @@ public class ModularWeapon : MonoBehaviour
 
     // ===== Buff API =====
 
+    /// <summary>Adds pellets to this weapon.</summary>
     public void AddPellets(int amount)
     {
         pelletBonus += amount;
     }
 
+    /// <summary>Reduces spread by a percentage (0.3 = 30% reduction).</summary>
     public void ReduceSpreadPercent(float percent)
     {
         spreadMultiplier *= (1f - percent);
