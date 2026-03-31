@@ -85,8 +85,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.6626981, y: 1, z: 1}
-  m_Center: {x: -0.16865095, y: 0, z: 0}
+  m_Size: {x: 0.25577563, y: 1, z: 1}
+  m_Center: {x: -0.37211218, y: 0, z: 0}
 --- !u!114 &9108565387738537761
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -107,7 +107,7 @@ MonoBehaviour:
   projectilePrefab: {fileID: 8184155314046719719, guid: ae6f733ff470385429cb9dd18b79b0cf, type: 3}
   useCrosshairWhenCentered: 1
   muzzleFlash: {fileID: 0}
-  muzzleFlashVFX: {fileID: 8541431059271982030}
+  muzzleFlashVFX: {fileID: 0}
   muzzleVFXGraph: {fileID: 6010722659431565105}
   audioSource: {fileID: 6641873479692927023}
   shootSound: {fileID: 8300000, guid: 2df04887b2f17b54db340f9bfdf88308, type: 3}
@@ -134,7 +134,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 940002021365629669, guid: 72e1a20d6d8cb794a9115aef25464e94, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.641
+      value: 0.723
       objectReference: {fileID: 0}
     - target: {fileID: 940002021365629669, guid: 72e1a20d6d8cb794a9115aef25464e94, type: 3}
       propertyPath: m_LocalPosition.y
@@ -142,7 +142,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 940002021365629669, guid: 72e1a20d6d8cb794a9115aef25464e94, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.017
+      value: -0.067
       objectReference: {fileID: 0}
     - target: {fileID: 1325601234449169034, guid: 72e1a20d6d8cb794a9115aef25464e94, type: 3}
       propertyPath: m_Layer
@@ -258,37 +258,8 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 940002021365629669, guid: 72e1a20d6d8cb794a9115aef25464e94, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5741866040794373448}
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 3878044617693227122, guid: 72e1a20d6d8cb794a9115aef25464e94, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8541431059271982030}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 72e1a20d6d8cb794a9115aef25464e94, type: 3}
---- !u!1 &2122827197551668386 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 3878044617693227122, guid: 72e1a20d6d8cb794a9115aef25464e94, type: 3}
-  m_PrefabInstance: {fileID: 2928563646053385424}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &8541431059271982030
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2122827197551668386}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2230064e49caa684c8b0e387a8a63f01, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  burstMaxScale: 0.35
-  burstDuration: 0.07
-  burstColor: {r: 0.4, g: 0.9, b: 1, a: 0.9}
-  useLight: 1
-  lightColor: {r: 0.4, g: 0.85, b: 1, a: 1}
-  lightIntensity: 6
-  lightRange: 4
-  lightDuration: 0.06
-  baseMaterial: {fileID: 2100000, guid: 0dfc153d60fa58047a8cb0cf5172bb12, type: 2}
 --- !u!4 &2715626341881300533 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 940002021365629669, guid: 72e1a20d6d8cb794a9115aef25464e94, type: 3}
