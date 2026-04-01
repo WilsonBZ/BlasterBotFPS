@@ -168,8 +168,7 @@ public class ChargeWeapon : ModularWeapon
             cp.Initialize(chargeRatio, damage, scale);
         }
 
-        if (muzzleFlashVFX != null) muzzleFlashVFX.Play();
-        if (muzzleFlash != null) muzzleFlash.Play();
+        PlayMuzzleEffects();
 
         ApplyRecoil();
         PlayOneShot(chargeFireSound);

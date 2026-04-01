@@ -27,6 +27,8 @@ public class ChargeProjectile : MonoBehaviour
 
     [Header("VFX")]
     [SerializeField] private GameObject explosionPrefab;
+    [Tooltip("Small impact flash spawned at contact point — use Hit000.prefab.")]
+    [SerializeField] private GameObject impactFlashPrefab;
     [SerializeField] private Material baseMaterial;
     [SerializeField] private Color minChargeColor = new Color(0.4f, 0.9f, 1f, 0.9f);
     [SerializeField] private Color maxChargeColor = new Color(1f, 0.4f, 0.05f, 0.9f);
@@ -184,6 +186,9 @@ public class ChargeProjectile : MonoBehaviour
             GameObject fx = Instantiate(explosionPrefab, point, Quaternion.identity);
             fx.transform.localScale = Vector3.one * Mathf.Lerp(0.5f, 2f, chargeRatio);
         }
+
+        if (impactFlashPrefab != null)
+            Instantiate(impactFlashPrefab, point, Quaternion.identity);
 
         SpawnShockwave(point);
     }

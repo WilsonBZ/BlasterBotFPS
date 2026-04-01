@@ -163,8 +163,9 @@ public class Projectile : MonoBehaviour
     private void SpawnImpactSphere(Vector3 position)
     {
         if (impactSphere != null)
-        {
             Instantiate(impactSphere, position, Quaternion.identity);
-        }
+
+        if (spawnEffect != null)
+            Instantiate(spawnEffect, position, Quaternion.identity);
     }
 }
