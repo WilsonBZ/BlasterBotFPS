@@ -114,8 +114,16 @@ public class WaveSpawner : MonoBehaviour
 
                 if (spawnIndicatorPrefab != null && indicatorDelay > 0f)
                 {
-                    GameObject ind = Instantiate(spawnIndicatorPrefab, spawnPos, Quaternion.identity);
-                    Destroy(ind, indicatorDelay + 0.25f);
+                    GameObject ind = PoolManager.Instance != null
+                        ? PoolManager.Instance.Get(spawnIndicatorPrefab, spawnPos, Quaternion.identity)
+                        : Instantiate(spawnIndicatorPrefab, spawnPos, Quaternion.identity);
+
+                    // Return indicator to pool after it has served its purpose.
+                    Poolable poolable = ind.GetComponent<Poolable>();
+                    if (poolable != null)
+                        StartCoroutine(ReleaseAfterDelay(poolable, indicatorDelay + 0.25f));
+                    else
+                        Destroy(ind, indicatorDelay + 0.25f);
                 }
 
                 float wait = indicatorDelay;
@@ -223,6 +231,12 @@ public class WaveSpawner : MonoBehaviour
         enemy.GetComponent<BaseEnemy>().OnDeath += () => { UnregisterEnemy(enemy); };
         StartCoroutine(WatchEnemyFallback(enemy));
         OnEnemySpawned?.Invoke(aliveEnemies);
+    }
+
+    private IEnumerator ReleaseAfterDelay(Poolable poolable, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        if (poolable != null) poolable.Release();
     }
 
     private IEnumerator WatchEnemyFallback(Enemy e)

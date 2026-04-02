@@ -458,7 +458,9 @@ public class HoverwaspAI : BaseEnemy, IDamageable
         if (config == null || config.projectilePrefab == null || firePoint == null) return;
 
         Quaternion rot = Quaternion.LookRotation(lockedAimDirection);
-        GameObject projectile = Instantiate(config.projectilePrefab, firePoint.position, rot);
+        GameObject projectile = PoolManager.Instance != null
+            ? PoolManager.Instance.Get(config.projectilePrefab, firePoint.position, rot)
+            : Instantiate(config.projectilePrefab, firePoint.position, rot);
 
         EnemyProjectile ep = projectile.GetComponent<EnemyProjectile>();
         if (ep != null)
@@ -617,7 +619,12 @@ public class HoverwaspAI : BaseEnemy, IDamageable
             col.enabled = false;
 
         if (deathEffect != null)
-            Instantiate(deathEffect, transform.position, Quaternion.identity);
+        {
+            if (PoolManager.Instance != null)
+                PoolManager.Instance.Get(deathEffect, transform.position, Quaternion.identity);
+            else
+                Instantiate(deathEffect, transform.position, Quaternion.identity);
+        }
 
         float cleanupTime = config != null ? config.deathCleanupTime : 3f;
         Destroy(gameObject, cleanupTime);
@@ -628,7 +635,9 @@ public class HoverwaspAI : BaseEnemy, IDamageable
         if (damageNumberPrefab == null) return;
 
         Vector3 spawnPos = transform.position + numberOffset + Random.insideUnitSphere * 0.3f;
-        GameObject number = Instantiate(damageNumberPrefab, spawnPos, Quaternion.identity);
+        GameObject number = PoolManager.Instance != null
+            ? PoolManager.Instance.Get(damageNumberPrefab, spawnPos, Quaternion.identity)
+            : Instantiate(damageNumberPrefab, spawnPos, Quaternion.identity);
 
         if (Camera.main != null)
         {

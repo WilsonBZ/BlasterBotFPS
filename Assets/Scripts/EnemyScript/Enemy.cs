@@ -512,7 +512,10 @@ public class Enemy : BaseEnemy, IDamageable
         GameObject effect = config != null && config.canExplode ? deathEffect : deathEffect;
         if (effect != null)
         {
-            GameObject explosion = Instantiate(effect, explosionPosition, Quaternion.identity);
+            if (PoolManager.Instance != null)
+                PoolManager.Instance.Get(effect, explosionPosition, Quaternion.identity);
+            else
+                Instantiate(effect, explosionPosition, Quaternion.identity);
         }
 
         if (config != null && config.canExplode)
@@ -587,7 +590,9 @@ public class Enemy : BaseEnemy, IDamageable
         if (damageNumberPrefab == null) return;
 
         Vector3 spawnPos = transform.position + numberOffset + Random.insideUnitSphere * 0.3f;
-        GameObject number = Instantiate(damageNumberPrefab, spawnPos, Quaternion.identity);
+        GameObject number = PoolManager.Instance != null
+            ? PoolManager.Instance.Get(damageNumberPrefab, spawnPos, Quaternion.identity)
+            : Instantiate(damageNumberPrefab, spawnPos, Quaternion.identity);
 
         number.transform.LookAt(Camera.main.transform);
         number.transform.Rotate(0, 180, 0);

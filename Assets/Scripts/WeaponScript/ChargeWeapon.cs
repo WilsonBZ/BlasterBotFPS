@@ -153,12 +153,18 @@ public class ChargeWeapon : ModularWeapon
         if (useCrosshairWhenCentered && Camera.main != null)
         {
             Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-            forward = Physics.Raycast(ray, out RaycastHit hit, 1000f)
+            int playerLayer = LayerMask.NameToLayer("Player");
+            int ringLayer   = LayerMask.NameToLayer("Ring");
+            int mask = Physics.DefaultRaycastLayers;
+            if (playerLayer >= 0) mask &= ~(1 << playerLayer);
+            if (ringLayer   >= 0) mask &= ~(1 << ringLayer);
+
+            forward = Physics.Raycast(ray, out RaycastHit hit, 1000f, mask, QueryTriggerInteraction.Ignore)
                 ? (hit.point - firePoint.position).normalized
                 : ray.direction;
         }
 
-        GameObject proj = Instantiate(chargeProjectilePrefab, firePoint.position, Quaternion.LookRotation(forward));
+        GameObject proj = SpawnProjectile(chargeProjectilePrefab, firePoint.position, Quaternion.LookRotation(forward));
 
         ChargeProjectile cp = proj.GetComponent<ChargeProjectile>();
         if (cp != null)

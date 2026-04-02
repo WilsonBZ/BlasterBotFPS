@@ -39,7 +39,12 @@ public class ModularWeapon : MonoBehaviour
     [Tooltip("Optional transform to apply recoil to. If null, will use firePoint when available, otherwise the weapon root.")]
     public Transform recoilRoot;
 
-    // ===== Buff Modifiers (persistent) =====
+    [Header("Aim Raycast")]
+    [Tooltip("Layers excluded from the crosshair aim raycast. Player and Ring are always excluded automatically.")]
+    public LayerMask aimRaycastExcludeLayers = 0;
+
+    // Cached layer mask computed once in Start.
+    private int aimRaycastMask;
     private int pelletBonus = 0;
     private float spreadMultiplier = 1f;
 
@@ -63,11 +68,25 @@ public class ModularWeapon : MonoBehaviour
     {
         CacheRecoilRootAndOriginal();
         AutoFindMuzzleVFXGraph();
+        BuildAimRaycastMask();
     }
 
     void OnEnable()
     {
         CacheRecoilRootAndOriginal();
+        BuildAimRaycastMask();
+    }
+
+    /// <summary>Builds the aim raycast layer mask, always excluding Player and Ring.</summary>
+    private void BuildAimRaycastMask()
+    {
+        int playerLayer = LayerMask.NameToLayer("Player");
+        int ringLayer   = LayerMask.NameToLayer("Ring");
+
+        aimRaycastMask = Physics.DefaultRaycastLayers;
+        if (playerLayer >= 0) aimRaycastMask &= ~(1 << playerLayer);
+        if (ringLayer   >= 0) aimRaycastMask &= ~(1 << ringLayer);
+        aimRaycastMask &= ~aimRaycastExcludeLayers.value;
     }
 
     /// <summary>Searches child of firePoint for a VisualEffect if not manually assigned.</summary>
@@ -147,7 +166,7 @@ public class ModularWeapon : MonoBehaviour
             RaycastHit hit;
             float maxAimDistance = 1000f;
 
-            if (Physics.Raycast(aimRay, out hit, maxAimDistance))
+            if (Physics.Raycast(aimRay, out hit, maxAimDistance, aimRaycastMask, QueryTriggerInteraction.Ignore))
                 aimPoint = hit.point;
             else
                 aimPoint = aimRay.GetPoint(maxAimDistance);
@@ -163,7 +182,7 @@ public class ModularWeapon : MonoBehaviour
 
             if (projectilePrefab == null || firePoint == null) continue;
 
-            GameObject proj = Instantiate(projectilePrefab, firePoint.position, Quaternion.LookRotation(dir));
+            GameObject proj = SpawnProjectile(projectilePrefab, firePoint.position, Quaternion.LookRotation(dir));
             Rigidbody rb = proj.GetComponent<Rigidbody>();
             Projectile p = proj.GetComponent<Projectile>();
             float speed = (p != null) ? p.Speed : 30f;
@@ -189,7 +208,7 @@ public class ModularWeapon : MonoBehaviour
 
             if (projectilePrefab == null || firePoint == null) continue;
 
-            GameObject proj = Instantiate(projectilePrefab, firePoint.position, Quaternion.LookRotation(dir));
+            GameObject proj = SpawnProjectile(projectilePrefab, firePoint.position, Quaternion.LookRotation(dir));
             Rigidbody rb = proj.GetComponent<Rigidbody>();
             Projectile p = proj.GetComponent<Projectile>();
             float speed = (p != null) ? p.Speed : 30f;
@@ -197,6 +216,14 @@ public class ModularWeapon : MonoBehaviour
             if (rb != null)
                 rb.linearVelocity = dir * speed;
         }
+    }
+
+    /// <summary>Spawns a projectile via pool if available, otherwise falls back to Instantiate.</summary>
+    protected static GameObject SpawnProjectile(GameObject prefab, Vector3 position, Quaternion rotation)
+    {
+        if (PoolManager.Instance != null)
+            return PoolManager.Instance.Get(prefab, position, rotation);
+        return Instantiate(prefab, position, rotation);
     }
 
     /// <summary>Plays all muzzle flash effects — particle system, procedural VFX, and VFX Graph.</summary>
@@ -237,6 +264,25 @@ public class ModularWeapon : MonoBehaviour
             up * Mathf.Cos(angle) * distance;
 
         return spreadDir.normalized;
+    }
+
+    // ===== Gizmos =====
+
+    private void OnDrawGizmos()
+    {
+        if (firePoint == null) return;
+
+        // Green ray = firePoint.forward (the direction ModularWeapon passes to projectiles).
+        Gizmos.color = Color.green;
+        Gizmos.DrawRay(firePoint.position, firePoint.forward * 2f);
+
+        // Yellow sphere at the spawn origin.
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(firePoint.position, 0.05f);
+
+        // Red ray = firePoint.back, so you can instantly see if forward is flipped.
+        Gizmos.color = Color.red;
+        Gizmos.DrawRay(firePoint.position, -firePoint.forward * 0.5f);
     }
 
     public void TossOut(Vector3 direction, float forwardForce = 4f, float upForce = 1.2f)
