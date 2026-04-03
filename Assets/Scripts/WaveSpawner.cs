@@ -133,10 +133,13 @@ public class WaveSpawner : MonoBehaviour
                 if (prefab != null)
                 {
                     GameObject go = Instantiate(prefab, spawnPos, Quaternion.identity);
-                    var enemy = go.GetComponent<Enemy>();
+                    var enemy = go.GetComponent<BaseEnemy>();
                     if (enemy != null)
                     {
-                        enemy.spawner = this;
+                        // Pass spawner reference to concrete subclasses that expose it.
+                        if (enemy is Enemy legacyEnemy)   legacyEnemy.spawner = this;
+                        if (enemy is HoverwaspAI hoverwasp) hoverwasp.spawner = this;
+
                         RegisterEnemy(enemy);
                     }
                 }
@@ -224,32 +227,33 @@ public class WaveSpawner : MonoBehaviour
         return true;
     }
 
-    public void RegisterEnemy(Enemy enemy)
-    {
-        if (enemy == null) return;
-        aliveEnemies++;
-        enemy.GetComponent<BaseEnemy>().OnDeath += () => { UnregisterEnemy(enemy); };
-        StartCoroutine(WatchEnemyFallback(enemy));
-        OnEnemySpawned?.Invoke(aliveEnemies);
-    }
-
     private IEnumerator ReleaseAfterDelay(Poolable poolable, float delay)
     {
         yield return new WaitForSeconds(delay);
         if (poolable != null) poolable.Release();
     }
 
-    private IEnumerator WatchEnemyFallback(Enemy e)
+    /// <summary>Registers any BaseEnemy subclass (Enemy, HoverwaspAI, etc.) with this spawner.</summary>
+    public void RegisterEnemy(BaseEnemy enemy)
+    {
+        if (enemy == null) return;
+        aliveEnemies++;
+        enemy.OnDeath += () => { UnregisterEnemy(enemy); };
+        StartCoroutine(WatchEnemyFallback(enemy));
+        OnEnemySpawned?.Invoke(aliveEnemies);
+    }
+
+    private IEnumerator WatchEnemyFallback(BaseEnemy e)
     {
         while (e != null && !e.IsDead)
         {
             yield return null;
         }
-       
+
         yield break;
     }
 
-    private void UnregisterEnemy(Enemy enemy)
+    private void UnregisterEnemy(BaseEnemy enemy)
     {
         aliveEnemies = Mathf.Max(0, aliveEnemies - 1);
         OnEnemyDied?.Invoke(aliveEnemies);
