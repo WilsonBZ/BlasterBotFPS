@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5506907861668767629
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8617586276154267922}
+  - component: {fileID: -8822506839170656939}
+  m_Layer: 0
+  m_Name: Molotov eff
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8617586276154267922
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5506907861668767629}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.71999806, y: -0, z: -0, w: 0.69397604}
+  m_LocalPosition: {x: -16.45, y: 2.22, z: 29.97}
+  m_LocalScale: {x: 0.6858334, y: 0.6544436, z: 0.17624788}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: -92.109, y: 0, z: 0}
+--- !u!114 &-8822506839170656939
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5506907861668767629}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a22962c99bbb2a3418a60a0a53915510, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  radius: 3
+  damagePerTick: 8
+  tickInterval: 0.5
+  duration: 0
+  damageableLayers:
+    serializedVersion: 2
+    m_Bits: 65

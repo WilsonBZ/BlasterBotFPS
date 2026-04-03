@@ -16,6 +16,19 @@ public class WaveSpawner : MonoBehaviour
         public float spawnInterval = 0.5f;
     }
 
+    [Serializable]
+    public class EnemySpawnEntry
+    {
+        [Tooltip("The enemy prefab to spawn.")]
+        public GameObject prefab;
+
+        [Tooltip("When enabled, this enemy spawns at airSpawnHeight above the spawner instead of raycasting for ground.")]
+        public bool spawnInAir = false;
+
+        [Tooltip("Height above the spawner Y used when Spawn In Air is enabled.")]
+        public float airSpawnHeight = 4f;
+    }
+
     public enum SpawnShape
     {
         Circle,
@@ -27,7 +40,11 @@ public class WaveSpawner : MonoBehaviour
     public List<Wave> waves = new List<Wave>() { new Wave { enemyCount = 5, spawnInterval = 0.6f } };
 
     [Header("Enemy Prefabs")]
-    [Tooltip("Enemy prefab(s) to spawn. Must have the 'Enemy' component on the root.")]
+    [Tooltip("Enemy entries to spawn. Each entry has its own prefab and air-spawn settings.")]
+    public List<EnemySpawnEntry> enemyEntries = new List<EnemySpawnEntry>();
+
+    // Legacy field kept for backward compatibility — hidden in favour of enemyEntries.
+    [HideInInspector]
     public GameObject[] spawnPrefabs;
 
     [Header("Spawn Area (local to this GameObject)")]
@@ -52,8 +69,22 @@ public class WaveSpawner : MonoBehaviour
     public float indicatorDelay = 1.0f;
 
     [Header("Ground / safety")]
-    [Tooltip("Layer mask to use when raycasting indicator -> ground (optional).")]
+    [Tooltip("Layer mask to use when raycasting for ground.")]
     public LayerMask groundMask = ~0;
+
+    [Header("Overlap Check")]
+    [Tooltip("Radius of the sphere overlap test used to reject spawn positions inside geometry.")]
+    public float overlapCheckRadius = 0.6f;
+    [Tooltip("Layer mask for the overlap check. Should include solid geometry but NOT Ground — otherwise every floor position is rejected. Default excludes Ground, TransparentFX and UI.")]
+    public LayerMask overlapCheckMask = ~((1 << 5) | (1 << 1) | (1 << 3) | (1 << 4));
+    [Tooltip("Maximum re-roll attempts to find a clear spawn position before accepting the last candidate.")]
+    public int maxOverlapAttempts = 10;
+
+    [Header("Camera Visibility")]
+    [Tooltip("Only spawn enemies inside the player camera's view frustum.")]
+    public bool requireCameraVisibility = true;
+    [Tooltip("Extra margin (world units) added to the candidate's AABB when testing against the frustum. Increase to ensure the full enemy body is visible.")]
+    public float visibilityMargin = 1f;
 
     [Header("Debug / Utilities")]
     [Tooltip("Auto-start waves on Awake (for testing).")]
@@ -109,8 +140,9 @@ public class WaveSpawner : MonoBehaviour
 
             while (spawned < toSpawn)
             {
+                EnemySpawnEntry entry = ChooseEnemyEntry();
                 Vector3 spawnPos;
-                TryGetRandomSpawnPosition(out spawnPos);
+                TryGetRandomSpawnPosition(out spawnPos, entry);
 
                 if (spawnIndicatorPrefab != null && indicatorDelay > 0f)
                 {
@@ -118,7 +150,6 @@ public class WaveSpawner : MonoBehaviour
                         ? PoolManager.Instance.Get(spawnIndicatorPrefab, spawnPos, Quaternion.identity)
                         : Instantiate(spawnIndicatorPrefab, spawnPos, Quaternion.identity);
 
-                    // Return indicator to pool after it has served its purpose.
                     Poolable poolable = ind.GetComponent<Poolable>();
                     if (poolable != null)
                         StartCoroutine(ReleaseAfterDelay(poolable, indicatorDelay + 0.25f));
@@ -129,17 +160,14 @@ public class WaveSpawner : MonoBehaviour
                 float wait = indicatorDelay;
                 if (wait > 0f) yield return new WaitForSeconds(wait);
 
-                GameObject prefab = ChooseEnemyPrefab();
-                if (prefab != null)
+                if (entry?.prefab != null)
                 {
-                    GameObject go = Instantiate(prefab, spawnPos, Quaternion.identity);
+                    GameObject go = Instantiate(entry.prefab, spawnPos, Quaternion.identity);
                     var enemy = go.GetComponent<BaseEnemy>();
                     if (enemy != null)
                     {
-                        // Pass spawner reference to concrete subclasses that expose it.
-                        if (enemy is Enemy legacyEnemy)   legacyEnemy.spawner = this;
-                        if (enemy is HoverwaspAI hoverwasp) hoverwasp.spawner = this;
-
+                        if (enemy is Enemy legacyEnemy)     legacyEnemy.spawner = this;
+                        if (enemy is HoverwaspAI hoverwasp) hoverwasp.spawner   = this;
                         RegisterEnemy(enemy);
                     }
                 }
@@ -176,55 +204,100 @@ public class WaveSpawner : MonoBehaviour
         }
     }
 
-    private GameObject ChooseEnemyPrefab()
+    private EnemySpawnEntry ChooseEnemyEntry()
     {
-        if (spawnPrefabs == null || spawnPrefabs.Length == 0) return null;
-        if (spawnPrefabs.Length == 1) return spawnPrefabs[0];
-        int idx = UnityEngine.Random.Range(0, spawnPrefabs.Length);
-        return spawnPrefabs[idx];
+        if (enemyEntries == null || enemyEntries.Count == 0) return null;
+        if (enemyEntries.Count == 1) return enemyEntries[0];
+        return enemyEntries[UnityEngine.Random.Range(0, enemyEntries.Count)];
     }
 
-    public bool TryGetRandomSpawnPosition(out Vector3 position)
+    public bool TryGetRandomSpawnPosition(out Vector3 position, EnemySpawnEntry entry = null)
     {
-        Vector3 worldCandidate = transform.position;
+        bool inAir = entry != null && entry.spawnInAir;
+        float airH = entry != null ? entry.airSpawnHeight : 4f;
 
+        Camera cam = Camera.main;
+        Plane[] frustumPlanes = (requireCameraVisibility && cam != null)
+            ? GeometryUtility.CalculateFrustumPlanes(cam)
+            : null;
+
+        for (int attempt = 0; attempt < maxOverlapAttempts; attempt++)
+        {
+            Vector3 candidate = SampleCandidateXZ();
+
+            if (inAir)
+            {
+                candidate.y = transform.position.y + airH;
+            }
+            else
+            {
+                Vector3 rayOrigin = candidate + Vector3.up * 10f;
+                if (Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit hit, 50f, groundMask))
+                    candidate.y = hit.point.y;
+                else
+                    candidate.y = transform.position.y;
+            }
+
+            // Reject candidates outside the camera frustum.
+            if (frustumPlanes != null && !IsInFrustum(frustumPlanes, candidate))
+                continue;
+
+            // Reject candidates inside solid geometry.
+            if (!Physics.CheckSphere(candidate, overlapCheckRadius, overlapCheckMask))
+            {
+                position = candidate;
+                return true;
+            }
+        }
+
+        // Fallback: use the spawner origin regardless of visibility.
+        Vector3 fallback = transform.position;
+        if (inAir)
+        {
+            fallback.y = transform.position.y + airH;
+        }
+        else
+        {
+            Vector3 rayOrigin = fallback + Vector3.up * 10f;
+            if (Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit fallbackHit, 50f, groundMask))
+                fallback.y = fallbackHit.point.y;
+        }
+
+        position = fallback;
+        return false;
+    }
+
+    /// <summary>Returns true if the world position is inside the camera frustum, padded by visibilityMargin.</summary>
+    private bool IsInFrustum(Plane[] planes, Vector3 worldPos)
+    {
+        Bounds bounds = new Bounds(worldPos, Vector3.one * (visibilityMargin * 2f));
+        return GeometryUtility.TestPlanesAABB(planes, bounds);
+    }
+
+    /// <summary>Samples a random XZ point inside the configured spawn shape, ignoring Y.</summary>
+    private Vector3 SampleCandidateXZ()
+    {
         if (spawnShape == SpawnShape.Circle)
         {
             float angle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
             float r = Mathf.Sqrt(UnityEngine.Random.value) * (spawnRadius - innerRadius) + innerRadius;
-            Vector3 offset = new Vector3(Mathf.Sin(angle) * r, 0f, Mathf.Cos(angle) * r);
-            worldCandidate = transform.position + offset;
-        }
-        else 
-        {
-            int attempts = 0;
-            const int maxAttempts = 32;
-            Vector2 half = rectangleSize * 0.5f;
-            Vector2 innerHalf = innerRectangleSize * 0.5f;
-            while (attempts++ < maxAttempts)
-            {
-                float rx = UnityEngine.Random.Range(-half.x, half.x);
-                float rz = UnityEngine.Random.Range(-half.y, half.y);
-                if (innerRectangleSize.sqrMagnitude > 0f)
-                {
-                    if (Mathf.Abs(rx) < innerHalf.x && Mathf.Abs(rz) < innerHalf.y)
-                        continue;
-                }
-                worldCandidate = transform.position + new Vector3(rx, 0f, rz);
-                break;
-            }
+            return transform.position + new Vector3(Mathf.Sin(angle) * r, 0f, Mathf.Cos(angle) * r);
         }
 
-        Vector3 rayOrigin = worldCandidate + Vector3.up * 10f;
-        RaycastHit hit;
-        if (Physics.Raycast(rayOrigin, Vector3.down, out hit, 50f, groundMask))
+        // Rectangle
+        Vector2 half = rectangleSize * 0.5f;
+        Vector2 innerHalf = innerRectangleSize * 0.5f;
+        for (int i = 0; i < 32; i++)
         {
-            position = hit.point;
-            return true;
+            float rx = UnityEngine.Random.Range(-half.x, half.x);
+            float rz = UnityEngine.Random.Range(-half.y, half.y);
+            if (innerRectangleSize.sqrMagnitude > 0f &&
+                Mathf.Abs(rx) < innerHalf.x && Mathf.Abs(rz) < innerHalf.y)
+                continue;
+            return transform.position + new Vector3(rx, 0f, rz);
         }
 
-        position = new Vector3(worldCandidate.x, transform.position.y, worldCandidate.z);
-        return true;
+        return transform.position;
     }
 
     private IEnumerator ReleaseAfterDelay(Poolable poolable, float delay)

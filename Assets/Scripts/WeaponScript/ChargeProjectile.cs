@@ -38,6 +38,12 @@ public class ChargeProjectile : MonoBehaviour
     [SerializeField] private Light projectileLight;
     [SerializeField] private float lightIntensity = 4f;
 
+    [Header("Molotov")]
+    [Tooltip("Spawns a lingering fire zone on impact. Activated by the Molotov Explosion buff.")]
+    public bool molotovEnabled = false;
+    [Tooltip("MolotovZone prefab to spawn on explosion. Assign in the ChargeProjectile prefab.")]
+    public GameObject molotovZonePrefab;
+
     // ─── Runtime ─────────────────────────────────────────────────────────────
     private float chargeRatio;
     private float damage;
@@ -169,7 +175,16 @@ public class ChargeProjectile : MonoBehaviour
         SpawnExplosionVFX(point);
         ApplyAoEDamage(point);
 
-        // Detach trail so it lingers
+        if (molotovEnabled && molotovZonePrefab != null)
+        {
+            // Raycast down to snap the zone to the floor surface.
+            Vector3 zoneOrigin = point + Vector3.up * 0.5f;
+            Vector3 floorPos   = Physics.Raycast(zoneOrigin, Vector3.down, out RaycastHit floorHit, 5f)
+                ? floorHit.point
+                : point;
+            Instantiate(molotovZonePrefab, floorPos, Quaternion.identity);
+        }
+
         if (trail != null)
         {
             trail.transform.SetParent(null);

@@ -121,6 +121,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 64fc751ffe558414890ab06922575b84, type: 3}
       insertIndex: -1
       addedObject: {fileID: 8103492195785367822}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 64fc751ffe558414890ab06922575b84, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1568110851097923749}
   m_SourcePrefab: {fileID: 100100000, guid: 64fc751ffe558414890ab06922575b84, type: 3}
 --- !u!1 &7377705593022555239 stripped
 GameObject:
@@ -190,6 +193,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: 34bca85f43029f644be578e2d8eda20d, type: 2}
+  spawnActivationDelay: 1.5
+  animator: {fileID: 1568110851097923749}
   hoverHeight: 3
   hoverForce: 15
   hoverDamping: 5
@@ -228,6 +233,28 @@ MonoBehaviour:
   knockbackForceMultiplier: 2
   knockbackRecoveryTime: 0.4
   maxKnockbackSpeed: 12
+--- !u!95 &1568110851097923749
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7377705593022555239}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 3a2805a70c133984a8ac1b1380827937, type: 2}
+  m_CullingMode: 1
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!4 &7865871591080853213 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 64fc751ffe558414890ab06922575b84, type: 3}

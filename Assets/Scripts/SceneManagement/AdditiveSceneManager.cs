@@ -93,12 +93,15 @@ public class AdditiveSceneManager : MonoBehaviour
 
     /// <summary>
     /// Unloads all tracked room scenes and reloads from index 0.
-    /// Called by <see cref="FloorProgressManager"/> when the player advances a floor.
+    /// Called by <see cref="FloorProgressManager"/> when the player advances a floor,
+    /// or directly on player death / restart.
     /// </summary>
     public IEnumerator ResetToStart()
     {
         isTransitioning = true;
+        CurrentRoomIndex = -1;
 
+        // Unload every room scene that is currently tracked or Unity knows about.
         List<string> toUnload = new List<string>(loadedRoomScenes);
         loadedRoomScenes.Clear();
 
@@ -111,6 +114,21 @@ public class AdditiveSceneManager : MonoBehaviour
                 Debug.Log($"[AdditiveSceneManager] Unloaded for reset: {sceneName}");
             }
         }
+
+        // Also catch any room scenes that were loaded outside of this manager
+        // (e.g. open in the editor when Play was pressed) that we never tracked.
+        foreach (string sceneName in roomSceneNames)
+        {
+            Scene scene = SceneManager.GetSceneByName(sceneName);
+            if (scene.isLoaded)
+            {
+                yield return SceneManager.UnloadSceneAsync(sceneName);
+                Debug.Log($"[AdditiveSceneManager] Unloaded untracked scene for reset: {sceneName}");
+            }
+        }
+
+        // Wait a frame so Unity finishes unloading before reloading.
+        yield return null;
 
         CurrentRoomIndex = 0;
 
@@ -125,6 +143,32 @@ public class AdditiveSceneManager : MonoBehaviour
         }
 
         isTransitioning = false;
+        Debug.Log("[AdditiveSceneManager] Reset complete. Rooms reloaded from index 0.");
+    }
+
+    /// <summary>
+    /// Full restart: unloads all rooms, reloads them from scratch, then re-caches
+    /// all persistent manager references. Use this instead of SceneManager.LoadScene
+    /// on player death to avoid destroying DontDestroyOnLoad singletons.
+    /// </summary>
+    public void RestartFromDeath()
+    {
+        StartCoroutine(RestartFromDeathRoutine());
+    }
+
+    private IEnumerator RestartFromDeathRoutine()
+    {
+        yield return StartCoroutine(ResetToStart());
+
+        // Re-cache player reference in NewBuffManager after rooms have reloaded.
+        if (NewBuffManager.Instance != null)
+            NewBuffManager.Instance.RecacheReferences();
+
+        // Re-apply buff history and difficulty after a death restart.
+        if (FloorProgressManager.Instance != null)
+            FloorProgressManager.Instance.OnDeathRestart();
+
+        Time.timeScale = 1f;
     }
 
     /// <summary>Loads a room scene by its index in <see cref="roomSceneNames"/>.</summary>

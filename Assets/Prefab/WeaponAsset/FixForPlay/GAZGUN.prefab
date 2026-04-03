@@ -109,13 +109,19 @@ MonoBehaviour:
   muzzleFlash: {fileID: 0}
   muzzleFlashVFX: {fileID: 1826739128209807984}
   muzzleVFXGraph: {fileID: 3529662277325397445}
-  audioSource: {fileID: 1640741415818773055}
+  audioSource: {fileID: 0}
   shootSound: {fileID: 0}
   pitchVariation: 0.1
   recoilAngle: 15
   recoilRandomness: 0.2
   recoilReturnSpeed: 8
   recoilRoot: {fileID: 5824668862037045435}
+  weaponAnimator: {fileID: 0}
+  fireAnimationState: Fire
+  aimRaycastExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  spawnForwardOffset: 0.25
   minChargeTime: 0.4
   maxChargeTime: 2
   chargeProjectilePrefab: {fileID: 8212221339860360197, guid: 5323417889e194c4fab4fcd0690204f7, type: 3}
@@ -131,7 +137,7 @@ MonoBehaviour:
   maxLightRange: 5
   chargeStartSound: {fileID: 8300000, guid: 44db20c611c462640972be66f5b60cbd, type: 3}
   chargeFireSound: {fileID: 8300000, guid: 44db20c611c462640972be66f5b60cbd, type: 3}
-  chargeCancelSound: {fileID: 8300000, guid: 2ad597850ec143a4e9271677a17464ef, type: 3}
+  chargeCancelSound: {fileID: 0}
   chargeAudioSource: {fileID: 1640741415818773055}
 --- !u!1001 &502768868324165085
 PrefabInstance:

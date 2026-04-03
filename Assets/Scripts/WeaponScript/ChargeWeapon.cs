@@ -174,6 +174,8 @@ public class ChargeWeapon : ModularWeapon
             cp.Initialize(chargeRatio, damage, scale);
         }
 
+        GetComponent<MolotovChargeWeaponHook>()?.OnProjectileFired(proj);
+
         PlayMuzzleEffects();
 
         ApplyRecoil();

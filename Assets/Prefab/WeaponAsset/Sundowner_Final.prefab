@@ -163,6 +163,7 @@ MonoBehaviour:
   useCrosshairWhenCentered: 1
   muzzleFlash: {fileID: 0}
   muzzleFlashVFX: {fileID: 2432284867784872988}
+  muzzleVFXGraph: {fileID: 0}
   audioSource: {fileID: 1458241813622815394}
   shootSound: {fileID: 8300000, guid: 6cd42037ffe32d843806268e0a57b186, type: 3}
   pitchVariation: 0.1
@@ -170,6 +171,12 @@ MonoBehaviour:
   recoilRandomness: 0.1
   recoilReturnSpeed: 8
   recoilRoot: {fileID: 1826391833985414725}
+  weaponAnimator: {fileID: 0}
+  fireAnimationState: Fire
+  aimRaycastExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  spawnForwardOffset: 0.25
 --- !u!1 &6922001722525945340
 GameObject:
   m_ObjectHideFlags: 0

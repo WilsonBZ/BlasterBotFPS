@@ -198,6 +198,8 @@ public class ModularWeapon : MonoBehaviour
             // Offset spawn forward so the projectile starts clear of the ring geometry.
             Vector3 spawnPos = firePoint.position + dir * spawnForwardOffset;
             GameObject proj = SpawnProjectile(projectilePrefab, spawnPos, Quaternion.LookRotation(dir));
+            GetComponent<HomingProjectileSpawnerHook>()?.OnProjectileFired(proj);
+
             Rigidbody rb = proj.GetComponent<Rigidbody>();
             Projectile p = proj.GetComponent<Projectile>();
             float speed = (p != null) ? p.Speed : 30f;
@@ -225,6 +227,8 @@ public class ModularWeapon : MonoBehaviour
 
             Vector3 spawnPos = firePoint.position + dir * spawnForwardOffset;
             GameObject proj = SpawnProjectile(projectilePrefab, spawnPos, Quaternion.LookRotation(dir));
+            GetComponent<HomingProjectileSpawnerHook>()?.OnProjectileFired(proj);
+
             Rigidbody rb = proj.GetComponent<Rigidbody>();
             Projectile p = proj.GetComponent<Projectile>();
             float speed = (p != null) ? p.Speed : 30f;

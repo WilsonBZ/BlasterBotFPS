@@ -66,33 +66,32 @@ public class PlayerManager : MonoBehaviour, IDamageable
 
     private void Die()
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-        //if (isDead)
-        //{
-        //    return;
-        //}
+        if (isDead) return;
+        isDead = true;
 
-        //isDead = true;
+        Debug.Log("PlayerManager: Die() called.");
 
-        Debug.Log("PlayerManager: Die() called - Player is dead!");
+        OnDeath?.Invoke();
 
-        //PlayerMovement movement = GetComponent<PlayerMovement>();
-        //if (movement != null)
-        //{
-        //    movement.enabled = false;
-        //    Debug.Log("PlayerManager: Disabled PlayerMovement");
-        //}
+        // Disable player movement while the restart coroutine runs.
+        PlayerMovement movement = GetComponent<PlayerMovement>();
+        if (movement != null) movement.enabled = false;
 
-        //MouseMovement mouse = GetComponentInChildren<MouseMovement>();
-        //if (mouse != null)
-        //{
-        //    mouse.enabled = false;
-        //    Debug.Log("PlayerManager: Disabled MouseMovement");
-        //}
+        MouseMovement mouse = GetComponentInChildren<MouseMovement>();
+        if (mouse != null) mouse.enabled = false;
 
-        //Debug.Log($"PlayerManager: Invoking OnDeath event. Subscribers: {OnDeath?.GetInvocationList()?.Length ?? 0}");
-        //OnDeath?.Invoke();
-        //Debug.Log("PlayerManager: OnDeath event invoked");
+        // Use AdditiveSceneManager to reload rooms in-place, preserving all
+        // DontDestroyOnLoad singletons (NewBuffManager, FloorProgressManager, etc.)
+        if (AdditiveSceneManager.Instance != null)
+        {
+            AdditiveSceneManager.Instance.RestartFromDeath();
+        }
+        else
+        {
+            // Fallback: hard reload. Singletons will re-initialise on their own.
+            UnityEngine.SceneManagement.SceneManager.LoadScene(
+                UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
+        }
     }
 
     public void Heal(float amount)

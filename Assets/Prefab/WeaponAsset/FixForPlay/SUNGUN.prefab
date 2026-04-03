@@ -42,7 +42,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8358634770921370892}
   - component: {fileID: 1299634358416120655}
-  - component: {fileID: 3244523574260435009}
+  - component: {fileID: 4957017859058088213}
   m_Layer: 8
   m_Name: SUNGUN
   m_TagString: Untagged
@@ -87,7 +87,7 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &3244523574260435009
+--- !u!114 &4957017859058088213
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -96,15 +96,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 5038459991662395502}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5a4eac2f2ed4ab246a1a7ba283a210cd, type: 3}
+  m_Script: {fileID: 11500000, guid: f56a16cbd3420b04992ab59812f2ce93, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  basePellets: 1
-  baseSpreadAngle: 0.5
-  fireRate: 5
-  energyCostPerShot: 4
+  basePellets: 8
+  baseSpreadAngle: 6
+  fireRate: 999
+  energyCostPerShot: 0
   firePoint: {fileID: 1551210558183308276}
-  projectilePrefab: {fileID: 4206907625901127713, guid: 6f221f56ddce7df4d8f2919c3fadacfc, type: 3}
+  projectilePrefab: {fileID: 0}
   useCrosshairWhenCentered: 1
   muzzleFlash: {fileID: 0}
   muzzleFlashVFX: {fileID: 2367308858939801749}
@@ -112,10 +112,29 @@ MonoBehaviour:
   audioSource: {fileID: 5491457684886204093}
   shootSound: {fileID: 8300000, guid: b6c965c900b17664fa53d650194b9bc9, type: 3}
   pitchVariation: 0.1
-  recoilAngle: 4
-  recoilRandomness: 0.1
-  recoilReturnSpeed: 8
+  recoilAngle: 0
+  recoilRandomness: 0.2
+  recoilReturnSpeed: 10
   recoilRoot: {fileID: 7352466963483308321}
+  weaponAnimator: {fileID: 0}
+  fireAnimationState: Fire
+  aimRaycastExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  spawnForwardOffset: 0.25
+  range: 45
+  damagePerSecond: 40
+  beamRadius: 0.1
+  beamStartWidth: 0.1
+  beamEndWidth: 0.025
+  hitMask:
+    serializedVersion: 2
+    m_Bits: 499
+  beamColorInner: {r: 1, g: 0.85, b: 0.25, a: 1}
+  beamColorOuter: {r: 1, g: 0.35, b: 0, a: 0.55}
+  impactParticles: {fileID: 0}
+  energyPerSecond: 4
+  warmUpDuration: 0.2
 --- !u!1001 &1565620490078501339
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -208,7 +227,8 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 8
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 3811518518266327496, guid: 52a9469cb6972384b9836d5710d2180c, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 17225236259422767, guid: 52a9469cb6972384b9836d5710d2180c, type: 3}

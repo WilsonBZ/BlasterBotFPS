@@ -126,7 +126,7 @@ public class ArmMount360 : MonoBehaviour
     {
         if (lineSlots == null || lineSlots.Length != slotCount) { Debug.LogError("ArmMount360: lineSlots invalid."); yield break; }
         if (mi_FireInternal == null || fi_lastShotTime == null) { Debug.LogError("ArmMount360: Ability aborted (reflection unavailable)."); yield break; }
-        if (AllSlotsEmpty()) { Debug.Log("ArmMount360: Ability aborted — no weapons attached."); yield break; }
+        if (AllSlotsEmpty()) { Debug.Log("ArmMount360: Ability aborted ï¿½ no weapons attached."); yield break; }
         yield return StartCoroutine(RunFrontAbilityCoroutine());
     }
 
@@ -198,9 +198,18 @@ public class ArmMount360 : MonoBehaviour
     {
         if (isSwitching || abilityActive) yield break;
 
-        float minInterval = 1f / Mathf.Max(0.0001f, fireRate);
-        if (Time.time - lastShotTime < minInterval) yield break;
         var centerWeapon = attached[centerIndex];
+
+        // Laser weapons bypass the mount-level fire-rate gate so they receive
+        // TryFire every frame while Fire1 is held.
+        bool isLaser = centerWeapon is LaserWeapon;
+
+        if (!isLaser)
+        {
+            float minInterval = 1f / Mathf.Max(0.0001f, fireRate);
+            if (Time.time - lastShotTime < minInterval) yield break;
+        }
+
         if (centerWeapon != null) { centerWeapon.TryFire(battery, Camera.main, centerMultiplier); lastShotTime = Time.time; yield break; }
 
         int nearest = FindNearestOccupiedSlot(centerIndex);
