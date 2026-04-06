@@ -72,6 +72,14 @@ public class HoverwaspAI : BaseEnemy, IDamageable
     [SerializeField] private float knockbackRecoveryTime = 0.4f;
     [SerializeField] private float maxKnockbackSpeed = 12f;
 
+    [Header("Shoot-While-Still Settings")]
+    [Tooltip("The wasp will wait until horizontal speed drops below this before locking aim and firing.")]
+    [SerializeField] private float stillSpeedThreshold = 0.6f;
+    [Tooltip("Max seconds to wait for the wasp to stop before firing anyway.")]
+    [SerializeField] private float stillWaitTimeout = 1.2f;
+    [Tooltip("How aggressively horizontal velocity is killed when stopping to aim (higher = snappier stop).")]
+    [SerializeField] private float brakeDamping = 14f;
+
     [Header("LOS Repositioning")]
     [Tooltip("How fast the wasp rotates/strafes to find a clear line of sight to the player.")]
     [SerializeField] private float losRepositionSpeed = 4f;
@@ -111,8 +119,14 @@ public class HoverwaspAI : BaseEnemy, IDamageable
 
     private void InitializeComponents()
     {
+        // Auto-assign the Enemy layer so OverlapSphere exclusions work even
+        // if the prefab was not updated manually.
+        int enemyLayer = LayerMask.NameToLayer("Enemy");
+        if (enemyLayer >= 0)
+            gameObject.layer = enemyLayer;
+
         hitFlashEffect = GetComponent<HitFlashEffect>();
-        
+
         if (hitFlashEffect == null)
             hitFlashEffect = gameObject.AddComponent<HitFlashEffect>();
 
@@ -227,8 +241,8 @@ public class HoverwaspAI : BaseEnemy, IDamageable
         if (currentState == HoverwaspState.Aiming || currentState == HoverwaspState.Shooting)
         {
             Vector3 vel = rb.linearVelocity;
-            vel.x = Mathf.Lerp(vel.x, 0f, Time.fixedDeltaTime * 8f);
-            vel.z = Mathf.Lerp(vel.z, 0f, Time.fixedDeltaTime * 8f);
+            vel.x = Mathf.Lerp(vel.x, 0f, Time.fixedDeltaTime * brakeDamping);
+            vel.z = Mathf.Lerp(vel.z, 0f, Time.fixedDeltaTime * brakeDamping);
             rb.linearVelocity = vel;
             return;
         }
@@ -455,22 +469,50 @@ public class HoverwaspAI : BaseEnemy, IDamageable
     {
         if (isShooting || firePoint == null) yield break;
 
-        isShooting = true;
+        isShooting   = true;
         currentState = HoverwaspState.Aiming;
 
-        // Snap and lock rotation towards player
-        Vector3 flatDir = player.transform.position - transform.position;
-        flatDir.y = 0f;
-        if (flatDir.sqrMagnitude > 0.001f)
-            transform.rotation = Quaternion.LookRotation(flatDir);
+        // ── Phase 1: brake to a stop ──────────────────────────────────────────
+        float stillTimer = 0f;
+        while (stillTimer < stillWaitTimeout)
+        {
+            Vector3 hVel = rb.linearVelocity;
+            hVel.y = 0f;
+            if (hVel.magnitude <= stillSpeedThreshold) break;
+            stillTimer += Time.deltaTime;
+            yield return null;
+        }
 
-        lockedAimDirection = (player.transform.position - firePoint.position).normalized;
+        // ── Phase 2: laser telegraph — track the player in real time ──────────
+        // lockedAimDirection is updated every frame here AND in UpdateLaser,
+        // so the red ray honestly shows where the shot will land.
+        float aimTimer = 0f;
+        while (aimTimer < aimDuration)
+        {
+            if (player != null && firePoint != null)
+            {
+                lockedAimDirection = (player.transform.position - firePoint.position).normalized;
 
-        // Hold laser on target
-        yield return new WaitForSeconds(aimDuration);
+                // Keep the body facing the player during the telegraph.
+                Vector3 flatDir = player.transform.position - transform.position;
+                flatDir.y = 0f;
+                if (flatDir.sqrMagnitude > 0.001f)
+                    transform.rotation = Quaternion.Slerp(
+                        transform.rotation,
+                        Quaternion.LookRotation(flatDir),
+                        Time.deltaTime * 12f);
+            }
 
-        // Burst fire
-        currentState = HoverwaspState.Shooting;
+            aimTimer += Time.deltaTime;
+            yield return null;
+        }
+
+        // ── Phase 3: snap-lock direction at the exact moment of firing ────────
+        if (player != null && firePoint != null)
+            lockedAimDirection = (player.transform.position - firePoint.position).normalized;
+
+        // ── Phase 4: burst fire ───────────────────────────────────────────────
+        currentState          = HoverwaspState.Shooting;
         laserRenderer.enabled = false;
 
         for (int i = 0; i < burstCount; i++)
@@ -481,7 +523,7 @@ public class HoverwaspAI : BaseEnemy, IDamageable
         }
 
         lastFireTime = Time.time;
-        isShooting = false;
+        isShooting   = false;
         currentState = HoverwaspState.Combat;
     }
 

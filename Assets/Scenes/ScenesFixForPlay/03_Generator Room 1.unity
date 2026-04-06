@@ -3274,7 +3274,7 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 4293868267496187845, guid: 0477fb55306e53544ab17553ef4e5b79, type: 3}
   m_PrefabInstance: {fileID: 1547333828}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 1705566150}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 253631751275c8648b080a95d3942209, type: 3}
@@ -30683,6 +30683,14 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 36322585513176378, guid: 0477fb55306e53544ab17553ef4e5b79, type: 3}
+      propertyPath: runSpeed
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 36322585513176378, guid: 0477fb55306e53544ab17553ef4e5b79, type: 3}
+      propertyPath: walkSpeed
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 36322585513176378, guid: 0477fb55306e53544ab17553ef4e5b79, type: 3}
       propertyPath: zooming_Effect
       value: 
       objectReference: {fileID: 1856889720}
@@ -31006,6 +31014,10 @@ PrefabInstance:
       propertyPath: field of view
       value: 80
       objectReference: {fileID: 0}
+    - target: {fileID: 7436534208382532630, guid: 0477fb55306e53544ab17553ef4e5b79, type: 3}
+      propertyPath: m_CullingMask.m_Bits
+      value: 1791
+      objectReference: {fileID: 0}
     - target: {fileID: 8783698235297575100, guid: 0477fb55306e53544ab17553ef4e5b79, type: 3}
       propertyPath: m_Layer
       value: 8
@@ -31021,7 +31033,13 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5517037098693832748, guid: 0477fb55306e53544ab17553ef4e5b79, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1705566158}
+    - targetCorrespondingSourceObject: {fileID: 5517037098693832748, guid: 0477fb55306e53544ab17553ef4e5b79, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1705566157}
   m_SourcePrefab: {fileID: 100100000, guid: 0477fb55306e53544ab17553ef4e5b79, type: 3}
 --- !u!4 &1551308563 stripped
 Transform:
@@ -35168,6 +35186,91 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 627585507}
   m_SourcePrefab: {fileID: 100100000, guid: cf777e9642b399a47ae32bfc52d6ddfc, type: 3}
+--- !u!1 &1705566150 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5517037098693832748, guid: 0477fb55306e53544ab17553ef4e5b79, type: 3}
+  m_PrefabInstance: {fileID: 1547333828}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1705566157
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1705566150}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 674b53587282e3f47bd49c07c9660ea8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hitVolume: {fileID: 0}
+  flashColor:
+    r: 0.85
+    g: 0.04
+    b: 0.04
+    a: 1
+  flashIntensity: 0.65
+  flashInTime: 0.04
+  flashOutTime: 0.38
+  impulseForce: 0.25
+  painCanvas: {fileID: 0}
+  painFadeDuration: 0.3
+  impulseSource: {fileID: 0}
+  vignette: {fileID: 0}
+  player: {fileID: 0}
+--- !u!114 &1705566158
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1705566150}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 180ecf9b41d478f468eb3e9083753217, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ImpulseDefinition:
+    ImpulseChannel: 1
+    ImpulseShape: 2
+    CustomImpulseShape:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    ImpulseDuration: 0.2
+    ImpulseType: 0
+    DissipationRate: 0.25
+    RawSignal: {fileID: 0}
+    AmplitudeGain: 1
+    FrequencyGain: 1
+    RepeatMode: 0
+    Randomize: 1
+    TimeEnvelope:
+      AttackShape:
+        serializedVersion: 2
+        m_Curve: []
+        m_PreInfinity: 2
+        m_PostInfinity: 2
+        m_RotationOrder: 4
+      DecayShape:
+        serializedVersion: 2
+        m_Curve: []
+        m_PreInfinity: 2
+        m_PostInfinity: 2
+        m_RotationOrder: 4
+      AttackTime: 0
+      SustainTime: 0.2
+      DecayTime: 0.7
+      ScaleWithImpact: 1
+      HoldForever: 0
+    ImpactRadius: 100
+    DirectionMode: 0
+    DissipationMode: 2
+    DissipationDistance: 100
+    PropagationSpeed: 343
+  DefaultVelocity: {x: 0, y: -1, z: 0}
 --- !u!4 &1710128558 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 4a11a1290084319449a090743bef65c2, type: 3}

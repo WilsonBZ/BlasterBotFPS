@@ -85,6 +85,12 @@ public class Enemy : BaseEnemy, IDamageable
 
     private void InitializeComponents()
     {
+        // Auto-assign the Enemy layer so OverlapSphere exclusions work even
+        // if the prefab was not updated manually.
+        int enemyLayer = LayerMask.NameToLayer("Enemy");
+        if (enemyLayer >= 0)
+            gameObject.layer = enemyLayer;
+
         animator = GetComponent<Animator>();
         hitFlashEffect = GetComponent<HitFlashEffect>();
 

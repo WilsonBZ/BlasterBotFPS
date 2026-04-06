@@ -84,10 +84,23 @@ MonoBehaviour:
   healthArcDegrees: 25
   batteryArcDegrees: 25
   gapDegreesBetweenArcs: 5
-  lineThickness: 0.03
   healthColor: {r: 0, g: 1, b: 0, a: 0.6745098}
   batteryColor: {r: 0, g: 1, b: 1, a: 0.6745098}
   backgroundColor: {r: 0.15, g: 0.15, b: 0.15, a: 0.5}
+  criticalColor: {r: 0.95, g: 0.15, b: 0.05, a: 1}
+  criticalThreshold: 0.25
+  lineThickness: 0.03
+  trackThickness: 0.018
+  trackRadiusOffset: 0.004
+  tickCount: 5
+  tickLength: 0.04
+  tickThickness: 0.006
+  tickColor: {r: 1, g: 0.78, b: 0.05, a: 0.45}
+  showEndCap: 1
+  endCapSize: 0.05
+  endCapThickness: 0.012
+  pulseFrequency: 3
+  pulseAlphaMin: 0.2
   uiLayerName: Ring
   uiLayerIndexFallback: 0
   showNumericText: 1
@@ -622,9 +635,92 @@ MonoBehaviour:
   fireRate: 1000
   turnRate: 0.5
   centerMultiplier: 1
-  rotateDuration: 0.5
-  rotateEase: 1
+  rotateDuration: 0.22
   modelYawOffset: 0
+  ringRotationCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.55
+      value: 1.12
+      inSlope: 2.2
+      outSlope: -0.8
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.78
+      value: 0.96
+      inSlope: -0.6
+      outSlope: 0.4
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  weaponSlidesCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.55
+      value: 1.06
+      inSlope: 2
+      outSlope: -0.5
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.78
+      value: 0.98
+      inSlope: -0.3
+      outSlope: 0.2
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
   tossKey: 103
   abilityKey: 116
   handleInput: 1

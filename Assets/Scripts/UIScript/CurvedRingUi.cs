@@ -126,8 +126,8 @@ public class CurvedRingUI : MonoBehaviour
         batteryPercent = (mount != null && mount.battery != null)
             ? Mathf.Clamp01(mount.battery.GetPercent()) : 0f;
 
-        float healthStart  = uiStartAngle;
-        float batteryStart = uiStartAngle + healthArcDegrees + gapDegreesBetweenArcs;
+        float batteryStart = uiStartAngle;
+        float healthStart  = uiStartAngle + batteryArcDegrees + gapDegreesBetweenArcs;
 
         Color hColor = GetArcColor(healthPercent,  healthColor)  * new Color(1, 1, 1, CriticalAlpha(healthPercent));
         Color bColor = GetArcColor(batteryPercent, batteryColor) * new Color(1, 1, 1, CriticalAlpha(batteryPercent));
@@ -148,8 +148,8 @@ public class CurvedRingUI : MonoBehaviour
         {
             int hp  = Mathf.RoundToInt(healthPercent  * 100f);
             int bat = Mathf.RoundToInt(batteryPercent * 100f);
-            numericText.text = $"<color=#{ColorUtility.ToHtmlStringRGB(healthColor)}>HP</color>  {hp:D3}\n"
-                             + $"<color=#{ColorUtility.ToHtmlStringRGB(batteryColor)}>BAT</color> {bat:D3}";
+            numericText.text = $"<color=#{ColorUtility.ToHtmlStringRGB(batteryColor)}>BAT</color> {bat:D3}\n"
+                             + $"<color=#{ColorUtility.ToHtmlStringRGB(healthColor)}>HP</color>  {hp:D3}";
         }
     }
 
@@ -174,8 +174,8 @@ public class CurvedRingUI : MonoBehaviour
     {
         DestroyChildren();
 
-        float healthStart  = uiStartAngle;
-        float batteryStart = uiStartAngle + healthArcDegrees + gapDegreesBetweenArcs;
+        float batteryStart = uiStartAngle;
+        float healthStart  = uiStartAngle + batteryArcDegrees + gapDegreesBetweenArcs;
         float trackR       = uiRadius + trackRadiusOffset;
 
         // background tracks

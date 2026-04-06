@@ -21,9 +21,16 @@ public class ArmMount360 : MonoBehaviour
     public float centerMultiplier = 1f;
 
     [Header("Rotation tween")]
-    public float rotateDuration = 0.12f;
-    public float rotateEase = 1.0f;
+    public float rotateDuration = 0.18f;
     public float modelYawOffset = -90f;
+
+    [Tooltip("Controls how the ring parent rotates over the switch duration (X = normalised time 0-1, Y = normalised progress 0-1). " +
+             "Default: smooth ease-in-out. Overshoot for a snappy feel, linear for instant snap.")]
+    public AnimationCurve ringRotationCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+
+    [Tooltip("Controls how the incoming and outgoing weapon models slide to their new local positions (X = normalised time, Y = normalised progress). " +
+             "Independent from the ring curve so you can e.g. overshoot the model while the ring eases smoothly.")]
+    public AnimationCurve weaponSlidesCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
     [Header("Input")]
     public KeyCode tossKey = KeyCode.G;
@@ -109,8 +116,8 @@ public class ArmMount360 : MonoBehaviour
         if (allowScrollWheel)
         {
             float wheel = Input.GetAxis("Mouse ScrollWheel");
-            if (wheel > 0.0001f) TryRotate(-1);
-            else if (wheel < -0.0001f) TryRotate(0);
+            if (wheel > 0.0001f)       TryRotate(-1);   // scroll up   → step backwards
+            else if (wheel < -0.0001f) TryRotate(1);    // scroll down → step forwards
         }
 
         if (abilityActive) return;
@@ -220,7 +227,7 @@ public class ArmMount360 : MonoBehaviour
         if (rotateCoroutine != null) StopCoroutine(rotateCoroutine);
 
         isSwitching = true;
-        yield return StartCoroutine(AnimateParentRotationBlocking(currentParentRotationY, targetParentY, rotateDuration, rotateEase));
+        yield return StartCoroutine(AnimateRingRotation(currentParentRotationY, targetParentY, rotateDuration, blockShooting: false));
         isSwitching = false;
 
         UpdateCenterIndex(nearest);
@@ -241,31 +248,33 @@ public class ArmMount360 : MonoBehaviour
         int newIndex = (centerIndex + delta) % slotCount;
         if (newIndex < 0) newIndex += slotCount;
         if (rotateCoroutine != null) StopCoroutine(rotateCoroutine);
-        rotateCoroutine = StartCoroutine(RotateAndSwapCoroutine(centerIndex, newIndex, rotateDuration, rotateEase));
+        rotateCoroutine = StartCoroutine(RotateAndSwapCoroutine(centerIndex, newIndex, rotateDuration));
     }
 
-    private IEnumerator RotateAndSwapCoroutine(int oldIndex, int newIndex, float duration, float ease)
+    private IEnumerator RotateAndSwapCoroutine(int oldIndex, int newIndex, float duration)
     {
         if (oldIndex == newIndex) { rotateCoroutine = null; yield break; }
 
         isSwitching = true;
 
-        float t = 0f;
-        float from = NormalizeAngle(currentParentRotationY);
+        float from      = NormalizeAngle(currentParentRotationY);
         float angleStep = 360f / slotCount;
-        float to = NormalizeAngle(-newIndex * angleStep);
-        float delta = ShortestAngleDelta(from, to);
+        float to        = NormalizeAngle(-newIndex * angleStep);
+        float angleDelta = ShortestAngleDelta(from, to);
 
         var oldW = oldIndex >= 0 && oldIndex < attached.Count ? attached[oldIndex] : null;
         var newW = newIndex >= 0 && newIndex < attached.Count ? attached[newIndex] : null;
 
-        Vector3 oldStartPos = Vector3.zero; Quaternion oldStartRot = Quaternion.identity; Vector3 oldTargetPos = Vector3.zero; Quaternion oldTargetRot = Quaternion.identity;
-        Vector3 newStartPos = Vector3.zero; Quaternion newStartRot = Quaternion.identity; Vector3 newTargetPos = Vector3.zero; Quaternion newTargetRot = Quaternion.identity;
+        // Capture start/target transforms for both weapons.
+        Vector3    oldStartPos = Vector3.zero,    oldTargetPos = Vector3.zero;
+        Quaternion oldStartRot = Quaternion.identity, oldTargetRot = Quaternion.identity;
+        Vector3    newStartPos = Vector3.zero,    newTargetPos = Vector3.zero;
+        Quaternion newStartRot = Quaternion.identity, newTargetRot = Quaternion.identity;
 
         if (oldW != null)
         {
-            oldStartPos = oldW.transform.localPosition;
-            oldStartRot = oldW.transform.localRotation;
+            oldStartPos  = oldW.transform.localPosition;
+            oldStartRot  = oldW.transform.localRotation;
             oldTargetPos = (originalSlotLocalPos.Length > oldIndex ? originalSlotLocalPos[oldIndex] : Vector3.zero) + sideLocalPositionOffset;
             oldTargetRot = Quaternion.Euler(sideLocalEulerOffset);
         }
@@ -280,70 +289,80 @@ public class ArmMount360 : MonoBehaviour
             newW.transform.localRotation = newStartRot;
         }
 
-        while (t < duration)
+        float elapsed = 0f;
+        while (elapsed < duration)
         {
-            t += Time.deltaTime;
-            float u = Mathf.Clamp01(duration <= 0f ? 1f : t / duration);
-            if (Mathf.Abs(ease - 1f) > 0.001f) u = Mathf.Pow(u, ease);
-            float current = from + delta * u;
+            elapsed += Time.deltaTime;
+            float u = Mathf.Clamp01(duration <= 0f ? 1f : elapsed / duration);
+
+            // Ring rotation uses its own curve.
+            float ringU   = EvaluateCurve(ringRotationCurve, u);
+            float current = from + angleDelta * ringU;
             weaponsParent.localEulerAngles = new Vector3(0f, current, 0f);
             currentParentRotationY = current;
-            float v = Mathf.SmoothStep(0f, 1f, u);
-            if (oldW != null) { oldW.transform.localPosition = Vector3.Lerp(oldStartPos, oldTargetPos, v); oldW.transform.localRotation = Quaternion.Slerp(oldStartRot, oldTargetRot, v); }
-            if (newW != null) { newW.transform.localPosition = Vector3.Lerp(newStartPos, newTargetPos, v); newW.transform.localRotation = Quaternion.Slerp(newStartRot, newTargetRot, v); }
+
+            // Weapon model slides use their own independent curve.
+            float slideU = EvaluateCurve(weaponSlidesCurve, u);
+            if (oldW != null)
+            {
+                oldW.transform.localPosition = Vector3.Lerp(oldStartPos, oldTargetPos, slideU);
+                oldW.transform.localRotation = Quaternion.Slerp(oldStartRot, oldTargetRot, slideU);
+            }
+            if (newW != null)
+            {
+                newW.transform.localPosition = Vector3.Lerp(newStartPos, newTargetPos, slideU);
+                newW.transform.localRotation = Quaternion.Slerp(newStartRot, newTargetRot, slideU);
+            }
+
             yield return null;
-            
         }
 
+        // Snap to final values.
         weaponsParent.localEulerAngles = new Vector3(0f, to, 0f);
         currentParentRotationY = to;
         UpdateCenterIndex(newIndex);
 
-        isSwitching = false;
+        isSwitching   = false;
         rotateCoroutine = null;
     }
 
-    private IEnumerator AnimateParentRotationBlocking(float startY, float endY, float duration, float ease)
+    /// <summary>
+    /// Animates only the ring parent rotation without touching weapon models.
+    /// Used by the ability system. Sets isSwitching for its duration.
+    /// </summary>
+    private IEnumerator AnimateRingRotation(float startY, float endY, float duration, bool blockShooting)
     {
-        float t = 0f;
-        float from = NormalizeAngle(startY);
-        float to = NormalizeAngle(endY);
+        if (blockShooting) isSwitching = true;
+
+        float from  = NormalizeAngle(startY);
+        float to    = NormalizeAngle(endY);
         float delta = ShortestAngleDelta(from, to);
-        while (t < duration)
+
+        float elapsed = 0f;
+        while (elapsed < duration)
         {
-            t += Time.deltaTime;
-            float u = Mathf.Clamp01(duration <= 0f ? 1f : t / duration);
-            if (Mathf.Abs(ease - 1f) > 0.001f) u = Mathf.Pow(u, ease);
-            float current = from + delta * u;
+            elapsed += Time.deltaTime;
+            float u       = Mathf.Clamp01(duration <= 0f ? 1f : elapsed / duration);
+            float ringU   = EvaluateCurve(ringRotationCurve, u);
+            float current = from + delta * ringU;
             weaponsParent.localEulerAngles = new Vector3(0f, current, 0f);
             currentParentRotationY = current;
             yield return null;
         }
+
         weaponsParent.localEulerAngles = new Vector3(0f, to, 0f);
         currentParentRotationY = to;
+
+        if (blockShooting) { isSwitching = false; rotateCoroutine = null; }
     }
 
-    private IEnumerator AnimateParentRotation(float startY, float endY, float duration, float ease)
+    /// <summary>
+    /// Evaluates the curve, falling back to linear if the curve has no keys.
+    /// </summary>
+    private static float EvaluateCurve(AnimationCurve curve, float t)
     {
-        isSwitching = true;
-        float t = 0f;
-        float from = NormalizeAngle(startY);
-        float to = NormalizeAngle(endY);
-        float delta = ShortestAngleDelta(from, to);
-        while (t < duration)
-        {
-            t += Time.deltaTime;
-            float u = Mathf.Clamp01(duration <= 0f ? 1f : t / duration);
-            if (Mathf.Abs(ease - 1f) > 0.001f) u = Mathf.Pow(u, ease);
-            float current = from + delta * u;
-            weaponsParent.localEulerAngles = new Vector3(0f, current, 0f);
-            currentParentRotationY = current;
-            yield return null;
-        }
-        weaponsParent.localEulerAngles = new Vector3(0f, to, 0f);
-        currentParentRotationY = to;
-        isSwitching = false;
-        rotateCoroutine = null;
+        if (curve == null || curve.length == 0) return t;
+        return curve.Evaluate(t);
     }
 
     private float NormalizeAngle(float a) => Mathf.Repeat(a + 180f, 360f) - 180f;
