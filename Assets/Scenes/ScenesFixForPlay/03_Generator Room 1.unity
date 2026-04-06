@@ -30694,6 +30694,10 @@ PrefabInstance:
       propertyPath: zooming_Effect
       value: 
       objectReference: {fileID: 1856889720}
+    - target: {fileID: 36322585513176378, guid: 0477fb55306e53544ab17553ef4e5b79, type: 3}
+      propertyPath: groundCheckRadius
+      value: 0.2
+      objectReference: {fileID: 0}
     - target: {fileID: 131102026120103204, guid: 0477fb55306e53544ab17553ef4e5b79, type: 3}
       propertyPath: m_Layer
       value: 8
@@ -35203,21 +35207,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 674b53587282e3f47bd49c07c9660ea8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hitVolume: {fileID: 0}
-  flashColor:
-    r: 0.85
-    g: 0.04
-    b: 0.04
-    a: 1
-  flashIntensity: 0.65
-  flashInTime: 0.04
-  flashOutTime: 0.38
-  impulseForce: 0.25
-  painCanvas: {fileID: 0}
-  painFadeDuration: 0.3
-  impulseSource: {fileID: 0}
-  vignette: {fileID: 0}
-  player: {fileID: 0}
 --- !u!114 &1705566158
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -82,6 +82,24 @@ public class FloorProgressManager : MonoBehaviour
     }
 
     /// <summary>
+    /// Called when starting a completely new game from the main menu.
+    /// Wipes floor count and buff history so the run begins from a clean state.
+    /// </summary>
+    public void FullReset()
+    {
+        CurrentFloor = 1;
+        appliedBuffHistory.Clear();
+
+        if (NewBuffManager.Instance != null)
+        {
+            NewBuffManager.Instance.OnBuffApplied -= RecordBuff;
+            NewBuffManager.Instance.OnBuffApplied += RecordBuff;
+        }
+
+        Debug.Log("[FloorProgressManager] Full reset — new game started.");
+    }
+
+    /// <summary>
     /// Called by <see cref="ElevatorRoomTrigger"/> after the player selects a buff.
     /// Increments the floor, resets all room scenes, then re-applies buffs and difficulty.
     /// </summary>

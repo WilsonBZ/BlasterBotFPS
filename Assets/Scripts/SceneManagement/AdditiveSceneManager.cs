@@ -28,6 +28,8 @@ public class AdditiveSceneManager : MonoBehaviour
     private readonly HashSet<string> loadedRoomScenes = new HashSet<string>();
     private bool isTransitioning = false;
 
+    private bool hasLaunchedOnce = false;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -42,8 +44,11 @@ public class AdditiveSceneManager : MonoBehaviour
 
     private void Start()
     {
-        if (roomSceneNames.Count > 0)
+        // Only auto-load on the very first launch. Subsequent game starts go
+        // through NewGameFromMenu() which fully resets state before loading rooms.
+        if (!hasLaunchedOnce && roomSceneNames.Count > 0)
         {
+            hasLaunchedOnce = true;
             LoadRoomAt(0);
         }
     }
@@ -169,6 +174,67 @@ public class AdditiveSceneManager : MonoBehaviour
             FloorProgressManager.Instance.OnDeathRestart();
 
         Time.timeScale = 1f;
+    }
+
+    /// <summary>
+    /// Called by <see cref="MainMenuUI"/> when starting a new game from the main menu.
+    /// Loads the boot scene non-additively (replacing the main menu) then loads
+    /// rooms on top, giving a clean slate identical to a first launch.
+    /// </summary>
+    /// <param name="bootSceneName">The base gameplay scene that hosts the player and HUD.</param>
+    public void NewGameFromMenu(string bootSceneName)
+    {
+        hasLaunchedOnce = true;
+
+        if (FloorProgressManager.Instance != null)
+            FloorProgressManager.Instance.FullReset();
+
+        StartCoroutine(NewGameFromMenuRoutine(bootSceneName));
+    }
+
+    private IEnumerator NewGameFromMenuRoutine(string bootSceneName)
+    {
+        // Unload any currently tracked room scenes so loadedRoomScenes is empty
+        // before the non-additive load wipes everything else.
+        List<string> toUnload = new List<string>(loadedRoomScenes);
+        loadedRoomScenes.Clear();
+        foreach (string s in toUnload)
+        {
+            Scene sc = SceneManager.GetSceneByName(s);
+            if (sc.isLoaded)
+                yield return SceneManager.UnloadSceneAsync(s);
+        }
+
+        isTransitioning = true;
+        CurrentRoomIndex = -1;
+
+        // Replace the main menu scene with the boot/gameplay base scene.
+        // AdditiveSceneManager survives because it is DontDestroyOnLoad.
+        AsyncOperation baseLoad = SceneManager.LoadSceneAsync(bootSceneName, LoadSceneMode.Single);
+        while (!baseLoad.isDone)
+            yield return null;
+
+        // Wait one extra frame for Awake/Start to run on freshly spawned objects.
+        yield return null;
+        yield return null;
+
+        // Re-cache references now that the new scene's objects exist.
+        if (NewBuffManager.Instance != null)
+            NewBuffManager.Instance.RecacheReferences();
+
+        // Load room scenes additively on top of the clean boot scene.
+        CurrentRoomIndex = 0;
+        if (roomSceneNames.Count > 0)
+        {
+            yield return LoadRoomAsync(roomSceneNames[0]);
+
+            for (int i = 1; i <= Mathf.Min(preloadAhead, roomSceneNames.Count - 1); i++)
+                yield return LoadRoomAsync(roomSceneNames[i]);
+        }
+
+        isTransitioning = false;
+        Time.timeScale = 1f;
+        Debug.Log("[AdditiveSceneManager] New game started from menu.");
     }
 
     /// <summary>Loads a room scene by its index in <see cref="roomSceneNames"/>.</summary>
