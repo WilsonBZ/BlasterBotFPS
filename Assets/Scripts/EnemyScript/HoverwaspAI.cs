@@ -1,12 +1,20 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.UI;
 
 [RequireComponent(typeof(Rigidbody))]
 public class HoverwaspAI : BaseEnemy, IDamageable
 {
     [Header("Core Settings")]
     [SerializeField] private EnemyConfig config;
+
+    [Header("Spawn Delay")]
+    [Tooltip("Seconds after spawning before the wasp begins detecting and targeting the player.")]
+    [SerializeField] private float spawnActivationDelay = 1.5f;
+    private bool isActivated = false;
+
+    [Header("Animation")]
+    [SerializeField] private Animator animator;
+    private static readonly int AnimIsFlying = Animator.StringToHash("IsFlying");
 
     [Header("Hover Settings")]
     [SerializeField] private float hoverHeight = 3f;
@@ -51,8 +59,6 @@ public class HoverwaspAI : BaseEnemy, IDamageable
     [SerializeField] private float strafeRadius = 2f;
 
     [Header("Health Settings")]
-    [SerializeField] private GameObject healthBarPrefab;
-    [SerializeField] private Vector3 healthBarOffset = new Vector3(0, 2f, 0);
 
     [Header("Visuals")]
     [SerializeField] private GameObject deathEffect;
@@ -66,8 +72,22 @@ public class HoverwaspAI : BaseEnemy, IDamageable
     [SerializeField] private float knockbackRecoveryTime = 0.4f;
     [SerializeField] private float maxKnockbackSpeed = 12f;
 
-    private Slider healthSlider;
-    private GameObject healthBarInstance;
+    [Header("Shoot-While-Still Settings")]
+    [Tooltip("The wasp will wait until horizontal speed drops below this before locking aim and firing.")]
+    [SerializeField] private float stillSpeedThreshold = 0.6f;
+    [Tooltip("Max seconds to wait for the wasp to stop before firing anyway.")]
+    [SerializeField] private float stillWaitTimeout = 1.2f;
+    [Tooltip("How aggressively horizontal velocity is killed when stopping to aim (higher = snappier stop).")]
+    [SerializeField] private float brakeDamping = 14f;
+
+    [Header("LOS Repositioning")]
+    [Tooltip("How fast the wasp rotates/strafes to find a clear line of sight to the player.")]
+    [SerializeField] private float losRepositionSpeed = 4f;
+    [Tooltip("Seconds to keep trying to reposition before giving up and returning to Idle.")]
+    [SerializeField] private float losRepositionTimeout = 3f;
+
+    private bool isRepositioning = false;
+    private float losRepositionTimer = 0f;
     private float currentHealth;
     private PlayerManager player;
     private Rigidbody rb;
@@ -99,23 +119,27 @@ public class HoverwaspAI : BaseEnemy, IDamageable
 
     private void InitializeComponents()
     {
+        // Auto-assign the Enemy layer so OverlapSphere exclusions work even
+        // if the prefab was not updated manually.
+        int enemyLayer = LayerMask.NameToLayer("Enemy");
+        if (enemyLayer >= 0)
+            gameObject.layer = enemyLayer;
+
         hitFlashEffect = GetComponent<HitFlashEffect>();
-        
+
         if (hitFlashEffect == null)
-        {
             hitFlashEffect = gameObject.AddComponent<HitFlashEffect>();
-        }
+
+        // Animator lives on the Hoverwasp_Avatar child that owns the skeleton.
+        if (animator == null)
+            animator = GetComponentInChildren<Animator>();
 
         player = FindFirstObjectByType<PlayerManager>();
         if (player == null)
-        {
             player = FindObjectOfType<PlayerManager>();
-        }
 
         if (player == null)
-        {
             Debug.LogWarning("HoverwaspAI: PlayerManager not found in scene.");
-        }
     }
 
     private void InitializeRigidbody()
@@ -175,19 +199,32 @@ public class HoverwaspAI : BaseEnemy, IDamageable
     private void Start()
     {
         currentHealth = config != null ? config.maxHealth : 50f;
-        CreateHealthBar();
         ChooseNewStrafeDirection();
         targetHoverHeight = hoverHeight + Random.Range(-verticalVariationAmount, verticalVariationAmount);
+
+        if (animator != null)
+            animator.SetBool(AnimIsFlying, true);
+
+        StartCoroutine(ActivateAfterDelay());
+    }
+
+    private IEnumerator ActivateAfterDelay()
+    {
+        yield return new WaitForSeconds(spawnActivationDelay);
+        isActivated = true;
     }
 
     private void Update()
     {
         if (player == null || isExploded) return;
 
-        UpdateStateMachine();
-        UpdateStrafeTimer();
+        if (isActivated)
+        {
+            UpdateStateMachine();
+            UpdateStrafeTimer();
+        }
+
         UpdateVerticalVariation();
-        UpdateHealthBarPosition();
         UpdateLaser();
     }
 
@@ -198,12 +235,14 @@ public class HoverwaspAI : BaseEnemy, IDamageable
         ApplyHoverForce();
         ApplyProximityAvoidance();
 
+        if (!isActivated) return;
+
         // Freeze horizontal movement while aiming or shooting
         if (currentState == HoverwaspState.Aiming || currentState == HoverwaspState.Shooting)
         {
             Vector3 vel = rb.linearVelocity;
-            vel.x = Mathf.Lerp(vel.x, 0f, Time.fixedDeltaTime * 8f);
-            vel.z = Mathf.Lerp(vel.z, 0f, Time.fixedDeltaTime * 8f);
+            vel.x = Mathf.Lerp(vel.x, 0f, Time.fixedDeltaTime * brakeDamping);
+            vel.z = Mathf.Lerp(vel.z, 0f, Time.fixedDeltaTime * brakeDamping);
             rb.linearVelocity = vel;
             return;
         }
@@ -211,7 +250,16 @@ public class HoverwaspAI : BaseEnemy, IDamageable
         if (currentState == HoverwaspState.Combat)
         {
             MoveTowardsPreferredDistance();
-            ApplyStrafeMovement();
+
+            if (isRepositioning)
+            {
+                // Strafe laterally with boosted speed until LOS is clear
+                rb.AddForce(strafeDirection * losRepositionSpeed, ForceMode.Acceleration);
+            }
+            else
+            {
+                ApplyStrafeMovement();
+            }
         }
 
         LookAtPlayer();
@@ -347,34 +395,6 @@ public class HoverwaspAI : BaseEnemy, IDamageable
         }
     }
 
-    private void CreateHealthBar()
-    {
-        if (healthBarPrefab == null) return;
-
-        healthBarInstance = Instantiate(healthBarPrefab, transform.position + healthBarOffset, Quaternion.identity);
-        healthBarInstance.transform.SetParent(transform);
-        healthSlider = healthBarInstance.GetComponentInChildren<Slider>();
-        UpdateHealthBar();
-    }
-
-    private void UpdateHealthBar()
-    {
-        if (healthSlider != null)
-        {
-            float maxHealth = config != null ? config.maxHealth : 50f;
-            healthSlider.value = currentHealth / maxHealth;
-        }
-    }
-
-    private void UpdateHealthBarPosition()
-    {
-        if (healthBarInstance && Camera.main != null)
-        {
-            healthBarInstance.transform.position = transform.position + healthBarOffset;
-            healthBarInstance.transform.rotation = Camera.main.transform.rotation;
-        }
-    }
-
     private void UpdateStateMachine()
     {
         if (player == null) return;
@@ -408,11 +428,37 @@ public class HoverwaspAI : BaseEnemy, IDamageable
     private void HandleCombatState(float distanceToPlayer)
     {
         float chaseRange = config != null ? config.chaseRange : 20f;
-        if (distanceToPlayer > chaseRange || !HasLineOfSightToPlayer())
+        if (distanceToPlayer > chaseRange)
         {
+            isRepositioning = false;
+            losRepositionTimer = 0f;
             currentState = HoverwaspState.Idle;
             return;
         }
+
+        if (!HasLineOfSightToPlayer())
+        {
+            if (!isRepositioning)
+            {
+                isRepositioning = true;
+                losRepositionTimer = 0f;
+                // Pick a new lateral strafe dir to reposition around cover
+                ChooseNewStrafeDirection();
+            }
+
+            losRepositionTimer += Time.deltaTime;
+            if (losRepositionTimer >= losRepositionTimeout)
+            {
+                isRepositioning = false;
+                losRepositionTimer = 0f;
+                currentState = HoverwaspState.Idle;
+            }
+            return;
+        }
+
+        // LOS restored
+        isRepositioning = false;
+        losRepositionTimer = 0f;
 
         float fireCooldown = config != null ? config.fireCooldown : 2f;
         if (!isShooting && Time.time >= lastFireTime + fireCooldown)
@@ -423,22 +469,50 @@ public class HoverwaspAI : BaseEnemy, IDamageable
     {
         if (isShooting || firePoint == null) yield break;
 
-        isShooting = true;
+        isShooting   = true;
         currentState = HoverwaspState.Aiming;
 
-        // Snap and lock rotation towards player
-        Vector3 flatDir = player.transform.position - transform.position;
-        flatDir.y = 0f;
-        if (flatDir.sqrMagnitude > 0.001f)
-            transform.rotation = Quaternion.LookRotation(flatDir);
+        // ── Phase 1: brake to a stop ──────────────────────────────────────────
+        float stillTimer = 0f;
+        while (stillTimer < stillWaitTimeout)
+        {
+            Vector3 hVel = rb.linearVelocity;
+            hVel.y = 0f;
+            if (hVel.magnitude <= stillSpeedThreshold) break;
+            stillTimer += Time.deltaTime;
+            yield return null;
+        }
 
-        lockedAimDirection = (player.transform.position - firePoint.position).normalized;
+        // ── Phase 2: laser telegraph — track the player in real time ──────────
+        // lockedAimDirection is updated every frame here AND in UpdateLaser,
+        // so the red ray honestly shows where the shot will land.
+        float aimTimer = 0f;
+        while (aimTimer < aimDuration)
+        {
+            if (player != null && firePoint != null)
+            {
+                lockedAimDirection = (player.transform.position - firePoint.position).normalized;
 
-        // Hold laser on target
-        yield return new WaitForSeconds(aimDuration);
+                // Keep the body facing the player during the telegraph.
+                Vector3 flatDir = player.transform.position - transform.position;
+                flatDir.y = 0f;
+                if (flatDir.sqrMagnitude > 0.001f)
+                    transform.rotation = Quaternion.Slerp(
+                        transform.rotation,
+                        Quaternion.LookRotation(flatDir),
+                        Time.deltaTime * 12f);
+            }
 
-        // Burst fire
-        currentState = HoverwaspState.Shooting;
+            aimTimer += Time.deltaTime;
+            yield return null;
+        }
+
+        // ── Phase 3: snap-lock direction at the exact moment of firing ────────
+        if (player != null && firePoint != null)
+            lockedAimDirection = (player.transform.position - firePoint.position).normalized;
+
+        // ── Phase 4: burst fire ───────────────────────────────────────────────
+        currentState          = HoverwaspState.Shooting;
         laserRenderer.enabled = false;
 
         for (int i = 0; i < burstCount; i++)
@@ -449,7 +523,7 @@ public class HoverwaspAI : BaseEnemy, IDamageable
         }
 
         lastFireTime = Time.time;
-        isShooting = false;
+        isShooting   = false;
         currentState = HoverwaspState.Combat;
     }
 
@@ -522,17 +596,12 @@ public class HoverwaspAI : BaseEnemy, IDamageable
         if (isExploded) return;
 
         currentHealth -= damage;
-        UpdateHealthBar();
 
         if (hitFlashEffect != null)
-        {
             hitFlashEffect.Flash();
-        }
 
         if (currentHealth <= 0)
-        {
             Die();
-        }
 
         ShowDamageNumber(damage);
     }
@@ -542,12 +611,9 @@ public class HoverwaspAI : BaseEnemy, IDamageable
         if (isExploded) return;
 
         currentHealth -= damage;
-        UpdateHealthBar();
 
         if (hitFlashEffect != null)
-        {
             hitFlashEffect.Flash();
-        }
 
         Vector3 knockbackImpulse = hitDirection.normalized * knockbackForceMultiplier;
         ApplyKnockback(knockbackImpulse, knockbackRecoveryTime);
@@ -611,7 +677,6 @@ public class HoverwaspAI : BaseEnemy, IDamageable
         isShooting = false;
 
         if (laserRenderer != null) laserRenderer.enabled = false;
-        if (healthBarInstance) healthBarInstance.SetActive(false);
 
         HandleDeath();
 

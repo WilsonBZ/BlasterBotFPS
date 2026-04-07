@@ -57,6 +57,20 @@ public class Enemy : BaseEnemy, IDamageable
     private Coroutine slowCoroutine;
     private HitFlashEffect hitFlashEffect;
 
+    [Header("Obstacle Avoidance")]
+    [Tooltip("Number of rays cast in a half-circle to detect obstacles ahead.")]
+    [SerializeField] private int steeringRayCount = 9;
+    [Tooltip("Half-angle of the steering fan in degrees (90 = full front hemisphere).")]
+    [SerializeField] private float steeringFanAngle = 90f;
+    [Tooltip("How far each steering ray reaches.")]
+    [SerializeField] private float steeringRayLength = 2f;
+    [Tooltip("Layers the steering rays collide with.")]
+    [SerializeField] private LayerMask steeringObstacleMask = ~0;
+
+    // Cached steering arrays — allocated once to avoid per-frame GC.
+    private float[] steeringWeights;
+    private Vector3 steeringMoveDir;
+
     private readonly int animMoveSpeed = Animator.StringToHash("MoveSpeed");
     private readonly int animAttack = Animator.StringToHash("Attack");
     private readonly int animTakeDamage = Animator.StringToHash("TakeDamage");
@@ -71,33 +85,33 @@ public class Enemy : BaseEnemy, IDamageable
 
     private void InitializeComponents()
     {
+        // Auto-assign the Enemy layer so OverlapSphere exclusions work even
+        // if the prefab was not updated manually.
+        int enemyLayer = LayerMask.NameToLayer("Enemy");
+        if (enemyLayer >= 0)
+            gameObject.layer = enemyLayer;
+
         animator = GetComponent<Animator>();
         hitFlashEffect = GetComponent<HitFlashEffect>();
-        
+
         if (hitFlashEffect == null)
-        {
             hitFlashEffect = gameObject.AddComponent<HitFlashEffect>();
-        }
 
         player = FindFirstObjectByType<PlayerManager>();
         if (player == null)
-        {
             player = FindObjectOfType<PlayerManager>();
-        }
-        
+
         if (player == null)
-        {
-            Debug.LogWarning("Enemy: PlayerManager not found in scene. Enemy will be inactive until a PlayerManager is present.");
-        }
+            Debug.LogWarning("Enemy: PlayerManager not found in scene.");
+
+        steeringWeights = new float[steeringRayCount];
     }
 
     private void InitializeRigidbody()
     {
         rb = GetComponent<Rigidbody>();
         if (rb == null)
-        {
             rb = gameObject.AddComponent<Rigidbody>();
-        }
 
         rb.interpolation = RigidbodyInterpolation.Interpolate;
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
@@ -135,20 +149,62 @@ public class Enemy : BaseEnemy, IDamageable
 
     private void FixedUpdate()
     {
-        // physics-based movement: only applied during Chase when not knocked back or attacking
         if (player == null || isExploded || isKnockedBack) return;
 
-        if (currentState == EnemyState.Chase)
+        isGrounded = Physics.CheckSphere(transform.position + groundCheckOffset, groundCheckRadius, groundMask);
+
+        if (currentState == EnemyState.Chase && isGrounded)
+            ApplySteeringMovement();
+    }
+
+    /// <summary>
+    /// Context steering: casts a fan of rays, scores each direction by obstacle clearance
+    /// and alignment with the player, then moves along the best direction.
+    /// </summary>
+    private void ApplySteeringMovement()
+    {
+        Vector3 toPlayer = player.transform.position - transform.position;
+        toPlayer.y = 0f;
+        Vector3 desiredDir = toPlayer.normalized;
+
+        float angleStep = steeringRayCount > 1
+            ? steeringFanAngle * 2f / (steeringRayCount - 1)
+            : 0f;
+
+        float bestScore = float.MinValue;
+        Vector3 bestDir = desiredDir;
+        Vector3 rayOrigin = transform.position + Vector3.up * 0.5f;
+
+        for (int i = 0; i < steeringRayCount; i++)
         {
-            Vector3 toPlayer = player.transform.position - transform.position;
-            Vector3 dir = new Vector3(toPlayer.x, 0f, toPlayer.z).normalized;
-            if (dir.sqrMagnitude > 0.001f && isGrounded)
+            float angle = -steeringFanAngle + angleStep * i;
+            Vector3 candidate = Quaternion.AngleAxis(angle, Vector3.up) * desiredDir;
+
+            // Interest: how much does this direction point at the player?
+            float interest = Vector3.Dot(candidate, desiredDir);
+
+            // Danger: reduce score if the ray hits an obstacle.
+            float danger = 0f;
+            if (Physics.Raycast(rayOrigin, candidate, out RaycastHit hit, steeringRayLength, steeringObstacleMask))
             {
-                float moveStep = runtimeMoveSpeed * Time.fixedDeltaTime;
-                Vector3 target = rb.position + dir * moveStep;
-                rb.MovePosition(target);
+                // Closer obstacle = higher danger penalty.
+                danger = 1f - (hit.distance / steeringRayLength);
+            }
+
+            float score = interest - danger;
+            steeringWeights[i] = score;
+
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestDir = candidate;
             }
         }
+
+        steeringMoveDir = Vector3.Lerp(steeringMoveDir, bestDir, Time.fixedDeltaTime * 8f);
+        Vector3 target = rb.position + steeringMoveDir * runtimeMoveSpeed * Time.fixedDeltaTime;
+        target.y = rb.position.y;
+        rb.MovePosition(target);
     }
 
     private void CreateHealthBar()
@@ -203,13 +259,15 @@ public class Enemy : BaseEnemy, IDamageable
                 break;
         }
 
+        // Always face the player on the XZ plane regardless of state.
         if (currentState != EnemyState.Dead && !isKnockedBack)
         {
-            Vector3 dir = (player.transform.position - transform.position).normalized;
-            if (dir != Vector3.zero)
+            Vector3 dir = player.transform.position - transform.position;
+            dir.y = 0f;
+            if (dir.sqrMagnitude > 0.001f)
             {
-                Quaternion lookRot = Quaternion.LookRotation(new Vector3(dir.x, 0, dir.z));
-                transform.rotation = Quaternion.Slerp(transform.rotation, lookRot, Time.deltaTime * 10f);
+                Quaternion targetRot = Quaternion.LookRotation(dir);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * 10f);
             }
         }
     }
@@ -223,21 +281,18 @@ public class Enemy : BaseEnemy, IDamageable
         if (currentState == EnemyState.Chase && !isKnockedBack && isGrounded)
         {
             Vector3 horizontalVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-
             move01 = horizontalVel.magnitude / Mathf.Max(0.01f, originalMoveSpeed);
         }
 
         animator.SetFloat(animMoveSpeed, move01, 0.1f, Time.deltaTime);
     }
 
-
     private void HandleIdleState(float distanceToPlayer)
     {
         if (player == null) return;
-        if (config != null && distanceToPlayer <= config.detectionRange && HasLineOfSightToPlayer())
-        {
+
+        if (config != null && distanceToPlayer <= config.detectionRange)
             TransitionToState(EnemyState.Chase);
-        }
     }
 
     private void HandleChaseState(float distanceToPlayer)
@@ -250,10 +305,9 @@ public class Enemy : BaseEnemy, IDamageable
             return;
         }
 
-        if (distanceToPlayer > config.chaseRange || !HasLineOfSightToPlayer())
-        {
+        if (distanceToPlayer > config.chaseRange)
             TransitionToState(EnemyState.Idle);
-        }
+        // Actual movement is in FixedUpdate via ApplySteeringMovement.
     }
 
     private void HandleAttackState(float distanceToPlayer)
@@ -422,13 +476,10 @@ public class Enemy : BaseEnemy, IDamageable
 
         rb.linearVelocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
-
         isKnockedBack = false;
 
         if (!isExploded)
-        {
             TransitionToState(EnemyState.Chase);
-        }
     }
 
     private void Attack()
@@ -450,17 +501,12 @@ public class Enemy : BaseEnemy, IDamageable
 
     private void Die()
     {
-        if (isExploded)
-        {
-            return;
-        }
+        if (isExploded) return;
 
         isExploded = true;
 
         if (healthBarInstance)
-        {
             healthBarInstance.SetActive(false);
-        }
 
         HandleDeath();
 
@@ -567,18 +613,13 @@ public class Enemy : BaseEnemy, IDamageable
     private IEnumerator FleeBehavior()
     {
         Vector3 fleeDirection = (transform.position - player.transform.position).normalized;
-        Vector3 fleePosition = transform.position + fleeDirection * config.fleeDistance;
-
-        Vector3 dir = (fleePosition - transform.position).normalized;
+        Vector3 dir = new Vector3(fleeDirection.x, 0f, fleeDirection.z).normalized;
         float elapsed = 0f;
-        float fleeTime = config.fleeDuration;
-        while (elapsed < fleeTime)
+
+        while (elapsed < config.fleeDuration)
         {
             elapsed += Time.deltaTime;
-            if (isGrounded)
-            {
-                rb.MovePosition(rb.position + dir * runtimeMoveSpeed * Time.deltaTime);
-            }
+            rb.MovePosition(rb.position + dir * runtimeMoveSpeed * Time.deltaTime);
             yield return null;
         }
 
@@ -628,9 +669,30 @@ public class Enemy : BaseEnemy, IDamageable
         {
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(transform.position, config.explosionTriggerRange);
-            
+
             Gizmos.color = new Color(1f, 0.5f, 0f, 0.3f);
             Gizmos.DrawWireSphere(transform.position, config.explosionDamageRadius);
+        }
+
+        // Steering ray gizmos
+        if (player == null) return;
+        Vector3 toPlayer = player.transform.position - transform.position;
+        toPlayer.y = 0f;
+        if (toPlayer.sqrMagnitude < 0.001f) return;
+
+        Vector3 desired = toPlayer.normalized;
+        float angleStep = steeringRayCount > 1 ? steeringFanAngle * 2f / (steeringRayCount - 1) : 0f;
+        Vector3 origin = transform.position + Vector3.up * 0.5f;
+
+        for (int i = 0; i < steeringRayCount; i++)
+        {
+            float angle = -steeringFanAngle + angleStep * i;
+            Vector3 dir = Quaternion.AngleAxis(angle, Vector3.up) * desired;
+            float w = steeringWeights != null && steeringWeights.Length == steeringRayCount
+                ? Mathf.Clamp01((steeringWeights[i] + 1f) / 2f)
+                : 0.5f;
+            Gizmos.color = Color.Lerp(Color.red, Color.green, w);
+            Gizmos.DrawRay(origin, dir * steeringRayLength);
         }
     }
 

@@ -258,11 +258,6 @@ public class GameManager : MonoBehaviour
     private void OnWaveCompleted(int index)
     {
         Debug.Log($"Wave completed: {index}");
-        
-        if (NewBuffManager.Instance != null)
-        {
-            NewBuffManager.Instance.ShowBuffSelection();
-        }
     }
 
     private void OnEnemyDied(int alive)

@@ -39,9 +39,18 @@ public class ModularWeapon : MonoBehaviour
     [Tooltip("Optional transform to apply recoil to. If null, will use firePoint when available, otherwise the weapon root.")]
     public Transform recoilRoot;
 
+    [Header("Fire Animation")]
+    [Tooltip("Animator on the weapon mesh. If null, searched in children on Start.")]
+    public Animator weaponAnimator;
+    [Tooltip("Name of the animation state to play on each shot (must exist in the Animator Controller).")]
+    public string fireAnimationState = "Fire";
+
     [Header("Aim Raycast")]
     [Tooltip("Layers excluded from the crosshair aim raycast. Player and Ring are always excluded automatically.")]
     public LayerMask aimRaycastExcludeLayers = 0;
+
+    [Tooltip("How far ahead of the firePoint (along fire direction) the projectile spawns. Increase if projectiles hit ring geometry.")]
+    public float spawnForwardOffset = 0.25f;
 
     // Cached layer mask computed once in Start.
     private int aimRaycastMask;
@@ -69,6 +78,9 @@ public class ModularWeapon : MonoBehaviour
         CacheRecoilRootAndOriginal();
         AutoFindMuzzleVFXGraph();
         BuildAimRaycastMask();
+
+        if (weaponAnimator == null)
+            weaponAnimator = GetComponentInChildren<Animator>(true);
     }
 
     void OnEnable()
@@ -156,6 +168,7 @@ public class ModularWeapon : MonoBehaviour
         PlayMuzzleEffects();
         PlayFireSound();
         ApplyRecoil();
+        PlayFireAnimation();
 
         Vector3 forwardDir = (firePoint != null) ? firePoint.forward : transform.forward;
 
@@ -182,7 +195,11 @@ public class ModularWeapon : MonoBehaviour
 
             if (projectilePrefab == null || firePoint == null) continue;
 
-            GameObject proj = SpawnProjectile(projectilePrefab, firePoint.position, Quaternion.LookRotation(dir));
+            // Offset spawn forward so the projectile starts clear of the ring geometry.
+            Vector3 spawnPos = firePoint.position + dir * spawnForwardOffset;
+            GameObject proj = SpawnProjectile(projectilePrefab, spawnPos, Quaternion.LookRotation(dir));
+            GetComponent<HomingProjectileSpawnerHook>()?.OnProjectileFired(proj);
+
             Rigidbody rb = proj.GetComponent<Rigidbody>();
             Projectile p = proj.GetComponent<Projectile>();
             float speed = (p != null) ? p.Speed : 30f;
@@ -208,7 +225,10 @@ public class ModularWeapon : MonoBehaviour
 
             if (projectilePrefab == null || firePoint == null) continue;
 
-            GameObject proj = SpawnProjectile(projectilePrefab, firePoint.position, Quaternion.LookRotation(dir));
+            Vector3 spawnPos = firePoint.position + dir * spawnForwardOffset;
+            GameObject proj = SpawnProjectile(projectilePrefab, spawnPos, Quaternion.LookRotation(dir));
+            GetComponent<HomingProjectileSpawnerHook>()?.OnProjectileFired(proj);
+
             Rigidbody rb = proj.GetComponent<Rigidbody>();
             Projectile p = proj.GetComponent<Projectile>();
             float speed = (p != null) ? p.Speed : 30f;
@@ -224,6 +244,13 @@ public class ModularWeapon : MonoBehaviour
         if (PoolManager.Instance != null)
             return PoolManager.Instance.Get(prefab, position, rotation);
         return Instantiate(prefab, position, rotation);
+    }
+
+    /// <summary>Plays the fire animation state on the weapon Animator if one is assigned.</summary>
+    protected void PlayFireAnimation()
+    {
+        if (weaponAnimator == null || string.IsNullOrEmpty(fireAnimationState)) return;
+        weaponAnimator.Play(fireAnimationState, 0, 0f);
     }
 
     /// <summary>Plays all muzzle flash effects — particle system, procedural VFX, and VFX Graph.</summary>

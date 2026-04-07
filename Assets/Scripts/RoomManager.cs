@@ -116,13 +116,15 @@ public class RoomManager : MonoBehaviour
         foreach (var exitDoor in exitDoors)
         {
             if (exitDoor != null)
-            {
                 exitDoor.isLocked = false;
-            }
         }
         
         OnRoomCleared?.Invoke();
         Debug.Log($"Room {gameObject.name} cleared! Exit doors unlocked.");
+
+        // Trigger buff selection after every room clear.
+        if (NewBuffManager.Instance != null)
+            NewBuffManager.Instance.ShowBuffSelection();
     }
 
     public void ForceStartRoom()

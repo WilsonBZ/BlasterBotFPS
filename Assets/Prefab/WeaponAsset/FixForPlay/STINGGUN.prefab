@@ -116,6 +116,12 @@ MonoBehaviour:
   recoilRandomness: 0.2
   recoilReturnSpeed: 15
   recoilRoot: {fileID: 326372250121726015}
+  weaponAnimator: {fileID: 0}
+  fireAnimationState: Fire
+  aimRaycastExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  spawnForwardOffset: 0.25
 --- !u!1001 &2928563646053385424
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -282,7 +288,13 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 940002021365629669, guid: 72e1a20d6d8cb794a9115aef25464e94, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5741866040794373448}
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1556910186105632967, guid: 72e1a20d6d8cb794a9115aef25464e94, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6499015786517047182}
+    - targetCorrespondingSourceObject: {fileID: 1556910186105632967, guid: 72e1a20d6d8cb794a9115aef25464e94, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5517328643444342035}
   m_SourcePrefab: {fileID: 100100000, guid: 72e1a20d6d8cb794a9115aef25464e94, type: 3}
 --- !u!4 &2715626341881300533 stripped
 Transform:
@@ -294,6 +306,68 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 2220434303793439357, guid: 72e1a20d6d8cb794a9115aef25464e94, type: 3}
   m_PrefabInstance: {fileID: 2928563646053385424}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &4413273158264683543 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1556910186105632967, guid: 72e1a20d6d8cb794a9115aef25464e94, type: 3}
+  m_PrefabInstance: {fileID: 2928563646053385424}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &6499015786517047182
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4413273158264683543}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: a0416bd2b3dbda746a93a540f99a7774, type: 2}
+  m_CullingMode: 1
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &5517328643444342035
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4413273158264683543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a4eac2f2ed4ab246a1a7ba283a210cd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  basePellets: 8
+  baseSpreadAngle: 6
+  fireRate: 3
+  energyCostPerShot: 1
+  firePoint: {fileID: 0}
+  projectilePrefab: {fileID: 0}
+  useCrosshairWhenCentered: 1
+  muzzleFlash: {fileID: 0}
+  muzzleFlashVFX: {fileID: 0}
+  muzzleVFXGraph: {fileID: 0}
+  audioSource: {fileID: 0}
+  shootSound: {fileID: 0}
+  pitchVariation: 0.1
+  recoilAngle: 2
+  recoilRandomness: 0.2
+  recoilReturnSpeed: 10
+  recoilRoot: {fileID: 0}
+  weaponAnimator: {fileID: 6499015786517047182}
+  fireAnimationState: Fire
+  aimRaycastExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  spawnForwardOffset: 0.25
 --- !u!82 &6641873479692927023 stripped
 AudioSource:
   m_CorrespondingSourceObject: {fileID: 8397231589570757887, guid: 72e1a20d6d8cb794a9115aef25464e94, type: 3}

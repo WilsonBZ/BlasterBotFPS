@@ -8,9 +8,29 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1858789975474839010, guid: 800c551634f34fe4885e28e7da9886ad, type: 3}
+      propertyPath: m_Size.x
+      value: 2.3918037
+      objectReference: {fileID: 0}
+    - target: {fileID: 1858789975474839010, guid: 800c551634f34fe4885e28e7da9886ad, type: 3}
+      propertyPath: m_Size.y
+      value: 1.4774574
+      objectReference: {fileID: 0}
+    - target: {fileID: 1858789975474839010, guid: 800c551634f34fe4885e28e7da9886ad, type: 3}
+      propertyPath: m_Center.x
+      value: -0.08078225
+      objectReference: {fileID: 0}
+    - target: {fileID: 1858789975474839010, guid: 800c551634f34fe4885e28e7da9886ad, type: 3}
+      propertyPath: m_Center.y
+      value: 0.23872882
+      objectReference: {fileID: 0}
     - target: {fileID: 3339320327864953927, guid: 800c551634f34fe4885e28e7da9886ad, type: 3}
       propertyPath: m_Name
       value: HoverwaspProjectile
+      objectReference: {fileID: 0}
+    - target: {fileID: 3339320327864953927, guid: 800c551634f34fe4885e28e7da9886ad, type: 3}
+      propertyPath: m_Layer
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 5925366217223823414, guid: 800c551634f34fe4885e28e7da9886ad, type: 3}
       propertyPath: m_LocalPosition.x
@@ -80,10 +100,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Speed: 200
   lifetime: 5.2
-  damage: 100
-  targetLayers:
-    serializedVersion: 2
-    m_Bits: 128
+  damage: 10
+  explosionRadius: 2
   impactSphere: {fileID: 6521721749499731154, guid: 27fb14fa8adafd3479998ce3dd04a471, type: 3}
   trail: {fileID: 0}
   audioSource: {fileID: 0}

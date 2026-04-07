@@ -502,6 +502,10 @@ MonoBehaviour:
   hitStopDuration: 0.03
   audioSource: {fileID: 0}
   fireSound: {fileID: 0}
+  homingEnabled: 0
+  homingActivationDelay: 0.15
+  homingSearchRadius: 30
+  homingTurnSpeed: 180
 --- !u!65 &595532924722034620
 BoxCollider:
   m_ObjectHideFlags: 0

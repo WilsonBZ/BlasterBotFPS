@@ -72,6 +72,16 @@ public class FloorProgressManager : MonoBehaviour
     }
 
     /// <summary>
+    /// Called after a death restart. Re-applies all previously earned buffs to the
+    /// new player instance without advancing the floor or increasing difficulty.
+    /// </summary>
+    public void OnDeathRestart()
+    {
+        SubscribeToBuffManager();
+        ApplyBuffHistoryToNewPlayer();
+    }
+
+    /// <summary>
     /// Called by <see cref="ElevatorRoomTrigger"/> after the player selects a buff.
     /// Increments the floor, resets all room scenes, then re-applies buffs and difficulty.
     /// </summary>

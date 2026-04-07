@@ -18,7 +18,7 @@ GameObject:
   - component: {fileID: 6389548751873238866}
   - component: {fileID: 3334921456292351992}
   - component: {fileID: 5251120779405875056}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: ChargeProjectile
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -343,6 +343,8 @@ MonoBehaviour:
   trail: {fileID: 5447028109218692884}
   projectileLight: {fileID: 3097109972024220448}
   lightIntensity: 4
+  molotovEnabled: 0
+  molotovZonePrefab: {fileID: 5506907861668767629, guid: 1cc995d8e6f852b47aa3eab2dfe69db2, type: 3}
 --- !u!114 &3334921456292351992
 MonoBehaviour:
   m_ObjectHideFlags: 0
