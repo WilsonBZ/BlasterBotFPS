@@ -163,15 +163,17 @@ public class AdditiveSceneManager : MonoBehaviour
 
     private IEnumerator RestartFromDeathRoutine()
     {
+        // Wipe floor, buff history, and difficulty BEFORE reloading scenes so
+        // freshly spawned WaveSpawners start at base difficulty, and buffs are not
+        // re-applied to the new player instance.
+        if (FloorProgressManager.Instance != null)
+            FloorProgressManager.Instance.FullReset();
+
         yield return StartCoroutine(ResetToStart());
 
         // Re-cache player reference in NewBuffManager after rooms have reloaded.
         if (NewBuffManager.Instance != null)
             NewBuffManager.Instance.RecacheReferences();
-
-        // Re-apply buff history and difficulty after a death restart.
-        if (FloorProgressManager.Instance != null)
-            FloorProgressManager.Instance.OnDeathRestart();
 
         Time.timeScale = 1f;
     }

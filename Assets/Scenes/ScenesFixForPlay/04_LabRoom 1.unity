@@ -1293,6 +1293,74 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: cfc86bbab35c66d439dc8e49c0d22902, type: 3}
   m_PrefabInstance: {fileID: 51096985}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &51669037
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 51669038}
+  - component: {fileID: 51669040}
+  - component: {fileID: 51669039}
+  m_Layer: 2
+  m_Name: ExitTrigger
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &51669038
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 51669037}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 3.19}
+  m_LocalScale: {x: 9.0256, y: 9.0256, z: 5.7471414}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1694941888}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &51669039
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 51669037}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5e5915b480100c4ab653149ea4ece08, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  roomManager: {fileID: 0}
+  owningSceneName: 04_LabRoom 1
+--- !u!65 &51669040
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 51669037}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &51911723
 GameObject:
   m_ObjectHideFlags: 0
@@ -35495,7 +35563,7 @@ MonoBehaviour:
   roomSceneNames:
   - 03_Generator Room 1
   - 04_LabRoom 1
-  - 04_LabRoom 2
+  - 05_Elevator Room 1
   preloadAhead: 1
 --- !u!4 &1224300804
 Transform:
@@ -41576,9 +41644,9 @@ MonoBehaviour:
   entranceDoors:
   - {fileID: 1084819766}
   exitDoors:
-  - {fileID: 1961988294}
-  waveSpawners:
   - {fileID: 0}
+  waveSpawners:
+  - {fileID: 2142195353}
   isActive: 0
   isCleared: 0
 --- !u!4 &1469437363
@@ -49530,6 +49598,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 6012635748905604742, guid: 78f3dfbb02d59b843b107532d1380c74, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1961988292}
+    - targetCorrespondingSourceObject: {fileID: 6012635748905604742, guid: 78f3dfbb02d59b843b107532d1380c74, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 51669038}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 1859652136212674202, guid: 78f3dfbb02d59b843b107532d1380c74, type: 3}
       insertIndex: -1
@@ -57637,7 +57708,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5e5915b480100c4ab653149ea4ece08, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  roomManager: {fileID: 1469437362}
+  roomManager: {fileID: 0}
   owningSceneName: 04_LabRoom 1
 --- !u!1 &1964836418
 GameObject:
@@ -61528,7 +61599,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   maxOverlapAttempts: 10
-  requireCameraVisibility: 1
+  requireCameraVisibility: 0
   visibilityMargin: 1
   autoStartForTest: 0
 --- !u!4 &2142195354

@@ -16,8 +16,8 @@ public class FloorProgressManager : MonoBehaviour
     }
 
     [Header("Difficulty Scaling")]
-    [Tooltip("Enemy count multiplier added per completed floor. e.g. 0.25 = +25% enemies each floor.")]
-    public float enemyCountScalePerFloor = 0.25f;
+    [Tooltip("Enemy count multiplier added per completed floor. 0.2 = +20% (1.2x) enemies each floor.")]
+    public float enemyCountScalePerFloor = 0.2f;
 
     [Tooltip("Delay in seconds before scenes reset after buff selection, giving time for any transition.")]
     public float resetDelay = 1.0f;
