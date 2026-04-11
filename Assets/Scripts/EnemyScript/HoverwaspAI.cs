@@ -109,6 +109,16 @@ public class HoverwaspAI : BaseEnemy, IDamageable
     private LineRenderer laserRenderer;
     private Vector3 lockedAimDirection;
 
+    // Hover raycast throttle — re-check height every N physics steps.
+    private int   hoverPhysicsFrame = 0;
+    private const int HoverInterval = 3;
+    private bool  cachedHasGround;
+    private float cachedGroundDistance;
+
+    // Proximity avoidance throttle — re-check neighbours every N physics steps.
+    private int proximityFrame = 0;
+    private const int ProximityInterval = 4;
+
     private void Awake()
     {
         InitializeComponents();
@@ -267,14 +277,19 @@ public class HoverwaspAI : BaseEnemy, IDamageable
 
     private void ApplyHoverForce()
     {
-        if (Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, heightCheckDistance, groundMask))
+        // Throttle the downward raycast — only re-check every HoverInterval physics steps.
+        hoverPhysicsFrame++;
+        if (hoverPhysicsFrame >= HoverInterval)
         {
-            float currentHeight = hit.distance;
-            float heightError = targetHoverHeight - currentHeight;
+            hoverPhysicsFrame  = 0;
+            cachedHasGround    = Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, heightCheckDistance, groundMask);
+            cachedGroundDistance = cachedHasGround ? hit.distance : heightCheckDistance;
+        }
 
-            float upForce = heightError * hoverForce;
-            upForce -= rb.linearVelocity.y * hoverDamping;
-
+        if (cachedHasGround)
+        {
+            float heightError = targetHoverHeight - cachedGroundDistance;
+            float upForce     = heightError * hoverForce - rb.linearVelocity.y * hoverDamping;
             rb.AddForce(Vector3.up * upForce, ForceMode.Acceleration);
         }
         else
@@ -285,17 +300,21 @@ public class HoverwaspAI : BaseEnemy, IDamageable
 
     private void ApplyProximityAvoidance()
     {
-        Collider[] nearbyEnemies = Physics.OverlapSphere(transform.position, proximityCheckRadius);
-        
+        proximityFrame++;
+        if (proximityFrame < ProximityInterval) return;
+        proximityFrame = 0;
+
+        Collider[] nearbyEnemies = Physics.OverlapSphere(transform.position, proximityCheckRadius, ~0, QueryTriggerInteraction.Ignore);
+
         foreach (Collider col in nearbyEnemies)
         {
             if (col.gameObject == gameObject) continue;
-            
+
             HoverwaspAI otherWasp = col.GetComponent<HoverwaspAI>();
             if (otherWasp != null && !otherWasp.isExploded)
             {
                 float verticalDistance = transform.position.y - otherWasp.transform.position.y;
-                
+
                 if (Mathf.Abs(verticalDistance) < minVerticalSeparation)
                 {
                     float separationDirection = verticalDistance >= 0 ? 1f : -1f;

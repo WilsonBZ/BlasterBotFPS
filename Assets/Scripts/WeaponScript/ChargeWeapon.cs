@@ -11,10 +11,31 @@ public class ChargeWeapon : ModularWeapon
     [SerializeField] private float minChargeTime = 0.4f;
     [SerializeField] private float maxChargeTime = 2.5f;
 
+    /// <summary>Minimum hold time before a release counts as a shot. Writable by buffs.</summary>
+    public float MinChargeTime
+    {
+        get => minChargeTime;
+        set => minChargeTime = Mathf.Max(0.05f, value);
+    }
+
+    /// <summary>Hold time for a fully-charged shot. Writable by buffs.</summary>
+    public float MaxChargeTime
+    {
+        get => maxChargeTime;
+        set => maxChargeTime = Mathf.Max(MinChargeTime + 0.1f, value);
+    }
+
     [Header("Projectile Scaling")]
     [SerializeField] private GameObject chargeProjectilePrefab;
     [SerializeField] private float minDamage = 20f;
     [SerializeField] private float maxDamage = 150f;
+
+    /// <summary>Peak damage at full charge. Writable by buffs.</summary>
+    public float MaxDamage
+    {
+        get => maxDamage;
+        set => maxDamage = Mathf.Max(minDamage + 1f, value);
+    }
     [SerializeField] private float minProjectileScale = 0.3f;
     [SerializeField] private float maxProjectileScale = 3f;
 

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using System;
 
 [DisallowMultipleComponent]
@@ -163,6 +164,13 @@ public class WaveSpawner : MonoBehaviour
                 if (entry?.prefab != null)
                 {
                     GameObject go = Instantiate(entry.prefab, spawnPos, Quaternion.identity);
+
+                    // Move the enemy into the same scene as the WaveSpawner so it is
+                    // destroyed when that room scene is unloaded on death/restart.
+                    // Without this, Instantiate places the object in the active scene
+                    // (the persistent boot scene) and it survives scene reloads.
+                    SceneManager.MoveGameObjectToScene(go, gameObject.scene);
+
                     var enemy = go.GetComponent<BaseEnemy>();
                     if (enemy != null)
                     {

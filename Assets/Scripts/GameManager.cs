@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEditor;
 
 [DisallowMultipleComponent]
 public class GameManager : MonoBehaviour
@@ -195,11 +196,11 @@ public class GameManager : MonoBehaviour
 
     public void QuitToDesktop()
     {
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
-#else
+    #if UNITY_EDITOR
+        EditorApplication.isPlaying = false;
+    #else      
         Application.Quit();
-#endif
+    #endif
     }
 
     private void SetPanelsVisibility(bool hud, bool pause, bool gameOver)
@@ -262,6 +263,6 @@ public class GameManager : MonoBehaviour
 
     private void OnEnemyDied(int alive)
     {
-        // alive is current alive count
+     
     }
 }

@@ -16,8 +16,8 @@ public class FloorProgressManager : MonoBehaviour
     }
 
     [Header("Difficulty Scaling")]
-    [Tooltip("Enemy count multiplier added per completed floor. e.g. 0.25 = +25% enemies each floor.")]
-    public float enemyCountScalePerFloor = 0.25f;
+    [Tooltip("Enemy count multiplier added per completed floor. 0.2 = +20% (1.2x) enemies each floor.")]
+    public float enemyCountScalePerFloor = 0.2f;
 
     [Tooltip("Delay in seconds before scenes reset after buff selection, giving time for any transition.")]
     public float resetDelay = 1.0f;
@@ -79,6 +79,24 @@ public class FloorProgressManager : MonoBehaviour
     {
         SubscribeToBuffManager();
         ApplyBuffHistoryToNewPlayer();
+    }
+
+    /// <summary>
+    /// Called when starting a completely new game from the main menu.
+    /// Wipes floor count and buff history so the run begins from a clean state.
+    /// </summary>
+    public void FullReset()
+    {
+        CurrentFloor = 1;
+        appliedBuffHistory.Clear();
+
+        if (NewBuffManager.Instance != null)
+        {
+            NewBuffManager.Instance.OnBuffApplied -= RecordBuff;
+            NewBuffManager.Instance.OnBuffApplied += RecordBuff;
+        }
+
+        Debug.Log("[FloorProgressManager] Full reset — new game started.");
     }
 
     /// <summary>

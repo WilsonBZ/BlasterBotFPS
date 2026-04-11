@@ -124,12 +124,13 @@ MonoBehaviour:
   spawnForwardOffset: 0.25
   range: 45
   damagePerSecond: 40
-  beamRadius: 0.1
-  beamStartWidth: 0.1
-  beamEndWidth: 0.025
+  beamRadius: 0.12
+  beamStartWidth: 0.12
   hitMask:
     serializedVersion: 2
-    m_Bits: 499
+    m_Bits: 507
+  beamMaterialCore: {fileID: 2100000, guid: 0dc92bdd8def2464f9d3a62e92e001b5, type: 2}
+  beamMaterialOuter: {fileID: 2100000, guid: a7c1ee6e209f89640afe05c3cd36fffc, type: 2}
   beamColorInner: {r: 1, g: 0.85, b: 0.25, a: 1}
   beamColorOuter: {r: 1, g: 0.35, b: 0, a: 0.55}
   impactParticles: {fileID: 0}
@@ -153,7 +154,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 17225236259422767, guid: 52a9469cb6972384b9836d5710d2180c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 1.016
+      value: 0.723
       objectReference: {fileID: 0}
     - target: {fileID: 305379163768051605, guid: 52a9469cb6972384b9836d5710d2180c, type: 3}
       propertyPath: recoilRoot
