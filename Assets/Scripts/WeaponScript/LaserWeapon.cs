@@ -18,14 +18,18 @@ public class LaserWeapon : ModularWeapon
     [SerializeField] private float damagePerSecond = 25f;
     [Tooltip("Radius of the beam for the damage sphere cast (0 = pure raycast).")]
     [SerializeField] private float beamRadius = 0.08f;
-    [Tooltip("Width of the visual line at the muzzle end.")]
+    [Tooltip("Diameter of the solid core cylinder in world units.")]
     [SerializeField] private float beamStartWidth = 0.06f;
-    [Tooltip("Width of the visual line at the impact end.")]
-    [SerializeField] private float beamEndWidth = 0.02f;
     [Tooltip("Layers the beam can hit.")]
     [SerializeField] private LayerMask hitMask = Physics.DefaultRaycastLayers;
 
-    [Header("Beam Colour")]
+    [Header("Beam Materials")]
+    [Tooltip("Opaque emissive core (VFX_LaserCore.mat). Falls back to a generated material if not assigned.")]
+    [SerializeField] private Material beamMaterialCore;
+    [Tooltip("Transparent additive outer glow (VFX_LaserOuter.mat). Falls back to a generated material if not assigned.")]
+    [SerializeField] private Material beamMaterialOuter;
+
+    [Header("Beam Colour (fallback when no material assigned)")]
     [SerializeField] private Color beamColorInner = new Color(1f, 0.85f, 0.3f, 1f);
     [SerializeField] private Color beamColorOuter = new Color(1f, 0.4f, 0.0f, 0.6f);
 
@@ -43,8 +47,13 @@ public class LaserWeapon : ModularWeapon
 
     // ─── Private ───────────────────────────────────────────────────────────────
 
-    private LineRenderer outerBeam;
-    private LineRenderer innerBeam;
+    // 3-D cylinder beam objects.
+    private MeshRenderer cylinderCore;
+    private MeshRenderer cylinderOuter;
+
+    // Unity's built-in cylinder mesh: 2 units tall, 1 unit diameter, Y-axis aligned.
+    private const float CylinderHalfHeight = 1f; // half of the 2-unit default height
+    private const float CylinderDiameter   = 1f; // default diameter in local space
 
     private bool isFiring;
     private int lastFireFrame = -1;   // frame TryFire was last called
@@ -53,13 +62,11 @@ public class LaserWeapon : ModularWeapon
     private IDamageable currentTarget;
     private float damageAccumulator;
 
-    private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
-
     // ─── Unity ────────────────────────────────────────────────────────────────
 
     private void Awake()
     {
-        BuildLineRenderers();
+        BuildCylinders();
     }
 
     /// <summary>
@@ -129,9 +136,8 @@ public class LaserWeapon : ModularWeapon
         Vector3 endPoint = didHit ? hit.point : origin + direction * range;
 
         // Update visuals.
-        SetBeamPositions(origin, endPoint);
-        SetBeamActive(true);
-        SetBeamBrightness(warmUpRatio);
+        UpdateCylinders(origin, endPoint, warmUpRatio);
+        SetCylindersActive(true);
 
         // Impact particles.
         if (impactParticles != null)
@@ -183,7 +189,7 @@ public class LaserWeapon : ModularWeapon
 
     private void StopBeam()
     {
-        SetBeamActive(false);
+        SetCylindersActive(false);
         warmUpTimer       = 0f;
         damageAccumulator = 0f;
         currentTarget     = null;
@@ -195,80 +201,121 @@ public class LaserWeapon : ModularWeapon
             audioSource.Stop();
     }
 
-    // ─── LineRenderer helpers ─────────────────────────────────────────────────
+    // ─── Cylinder helpers ─────────────────────────────────────────────────────
 
-    private void BuildLineRenderers()
+    /// <summary>
+    /// Creates core and outer cylinder GameObjects using the built-in cylinder mesh.
+    /// No CapsuleCollider is added — we strip it immediately to keep it purely visual.
+    /// </summary>
+    private void BuildCylinders()
     {
-        innerBeam = CreateBeam("Beam_Inner", beamStartWidth,       beamEndWidth,       beamColorInner);
-        outerBeam = CreateBeam("Beam_Outer", beamStartWidth * 2.5f, beamEndWidth * 2f, beamColorOuter);
+        // Grab the shared cylinder mesh from a temporary primitive and discard the GO.
+        GameObject temp = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        Mesh cylinderMesh = temp.GetComponent<MeshFilter>().sharedMesh;
+        Destroy(temp);
 
-        SetBeamActive(false);
+        Material coreMat  = beamMaterialCore  != null ? beamMaterialCore  : CreateBeamMaterial(beamColorInner, opaque: true);
+        Material outerMat = beamMaterialOuter != null ? beamMaterialOuter : CreateBeamMaterial(beamColorOuter, opaque: false);
+
+        cylinderCore  = CreateCylinderMesh("Beam_Core",  cylinderMesh, coreMat);
+        cylinderOuter = CreateCylinderMesh("Beam_Outer", cylinderMesh, outerMat);
+
+        SetCylindersActive(false);
     }
 
-    private LineRenderer CreateBeam(string goName, float startWidth, float endWidth, Color color)
+    private MeshRenderer CreateCylinderMesh(string goName, Mesh mesh, Material mat)
     {
-        GameObject go = new GameObject(goName);
+        GameObject go    = new GameObject(goName);
+        go.layer         = LayerMask.NameToLayer("Ignore Raycast");
         go.transform.SetParent(transform, false);
 
-        LineRenderer lr   = go.AddComponent<LineRenderer>();
-        lr.positionCount  = 2;
-        lr.startWidth     = startWidth;
-        lr.endWidth       = endWidth;
-        lr.useWorldSpace  = true;
-        lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        lr.receiveShadows = false;
-        lr.generateLightingData = true;
+        MeshFilter mf    = go.AddComponent<MeshFilter>();
+        mf.sharedMesh    = mesh;
 
-        // Use a simple additive/unlit material so the beam glows regardless of lighting.
-        Material mat = CreateBeamMaterial(color);
-        lr.material = mat;
+        MeshRenderer mr             = go.AddComponent<MeshRenderer>();
+        mr.sharedMaterial           = mat;
+        mr.shadowCastingMode        = UnityEngine.Rendering.ShadowCastingMode.Off;
+        mr.receiveShadows           = false;
+        mr.lightProbeUsage          = UnityEngine.Rendering.LightProbeUsage.Off;
+        mr.reflectionProbeUsage     = UnityEngine.Rendering.ReflectionProbeUsage.Off;
 
-        return lr;
+        return mr;
     }
 
-    private static Material CreateBeamMaterial(Color color)
+    /// <summary>
+    /// Positions and scales both cylinders so they span from <paramref name="start"/>
+    /// to <paramref name="end"/> every frame.
+    ///
+    /// Unity's cylinder mesh is 2 units tall and 1 unit in diameter along its local Y axis.
+    /// To align it with an arbitrary world direction:
+    ///   - Position  = midpoint of start→end
+    ///   - Rotation  = FromToRotation(Vector3.up, direction)
+    ///   - Scale.Y   = length / 2   (halved because the mesh is 2 units, not 1)
+    ///   - Scale.XZ  = desired diameter (mesh is already 1 unit wide)
+    /// </summary>
+    private void UpdateCylinders(Vector3 start, Vector3 end, float warmUpRatio)
     {
-        // URP Unlit with additive blending gives the brightest glow.
-        Shader shader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
+        Vector3 delta     = end - start;
+        float   length    = delta.magnitude;
+        if (length < 0.001f) return;
+
+        Vector3    midPoint  = start + delta * 0.5f;
+        Quaternion rotation  = Quaternion.FromToRotation(Vector3.up, delta / length);
+
+        // Diameter grows from 0 to full during warm-up.
+        float coreDiameter  = Mathf.Lerp(0f, beamStartWidth,        warmUpRatio);
+        float outerDiameter = Mathf.Lerp(0f, beamStartWidth * 3.5f, warmUpRatio);
+        float halfLength    = length / (CylinderHalfHeight * 2f);   // = length / 2
+
+        if (cylinderCore != null)
+        {
+            Transform t     = cylinderCore.transform;
+            t.position      = midPoint;
+            t.rotation      = rotation;
+            t.localScale    = new Vector3(coreDiameter, halfLength, coreDiameter);
+        }
+
+        if (cylinderOuter != null)
+        {
+            Transform t     = cylinderOuter.transform;
+            t.position      = midPoint;
+            t.rotation      = rotation;
+            t.localScale    = new Vector3(outerDiameter, halfLength, outerDiameter);
+        }
+    }
+
+    private void SetCylindersActive(bool active)
+    {
+        if (cylinderCore  != null && cylinderCore.enabled  != active) cylinderCore.enabled  = active;
+        if (cylinderOuter != null && cylinderOuter.enabled != active) cylinderOuter.enabled = active;
+    }
+
+    /// <summary>
+    /// Generates a minimal URP Unlit beam material at runtime.
+    /// Used only when no material asset is assigned in the Inspector.
+    /// </summary>
+    private static Material CreateBeamMaterial(Color color, bool opaque)
+    {
+        Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
         if (shader == null) shader = Shader.Find("Unlit/Color");
 
         Material mat = new Material(shader);
         mat.SetColor("_BaseColor", color);
-        mat.SetColor(EmissionColorId, color * 2f);
         mat.enableInstancing = true;
 
-        // Additive blend on URP Unlit particle shader.
-        if (mat.HasProperty("_BlendMode"))
-            mat.SetFloat("_BlendMode", 4f); // Additive
+        if (opaque)
+        {
+            mat.SetFloat("_Surface", 0f); // Opaque
+        }
+        else
+        {
+            mat.SetFloat("_Surface", 1f); // Transparent
+            mat.SetFloat("_Blend",   4f); // Additive
+            mat.SetFloat("_Cull",    0f); // Off — visible from inside the cylinder
+            mat.renderQueue = 3001;
+        }
 
         return mat;
-    }
-
-    private void SetBeamPositions(Vector3 start, Vector3 end)
-    {
-        if (innerBeam != null) { innerBeam.SetPosition(0, start); innerBeam.SetPosition(1, end); }
-        if (outerBeam != null) { outerBeam.SetPosition(0, start); outerBeam.SetPosition(1, end); }
-    }
-
-    private void SetBeamActive(bool active)
-    {
-        if (innerBeam != null && innerBeam.enabled != active) innerBeam.enabled = active;
-        if (outerBeam != null && outerBeam.enabled != active) outerBeam.enabled = active;
-    }
-
-    private void SetBeamBrightness(float t)
-    {
-        // Pulse width up during warm-up.
-        if (innerBeam != null)
-        {
-            innerBeam.startWidth = Mathf.Lerp(0f, beamStartWidth,        t);
-            innerBeam.endWidth   = Mathf.Lerp(0f, beamEndWidth,          t);
-        }
-        if (outerBeam != null)
-        {
-            outerBeam.startWidth = Mathf.Lerp(0f, beamStartWidth * 2.5f, t);
-            outerBeam.endWidth   = Mathf.Lerp(0f, beamEndWidth   * 2f,   t);
-        }
     }
 
     private void OnDisable()
