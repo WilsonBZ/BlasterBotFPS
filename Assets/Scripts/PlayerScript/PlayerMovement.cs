@@ -18,7 +18,7 @@ public class PlayerMovement : MonoBehaviour
     [Header("Jump Settings")]
     [SerializeField] private float jumpForce = 8f;
     [SerializeField] private float gravity = 9.81f;
-    [SerializeField] private int maxAirJumps = 1;
+    public int maxAirJumps = 1;
 
     [Header("CeilingCling Setting")]
     [SerializeField] private float ceilingClingDuration = 1f;
@@ -26,7 +26,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float ceilingClingSpeed = 0.5f;
 
     [Header("Slide Settings")]
-    [SerializeField] private float slideSpeed = 20f;
+    public float slideSpeed = 20f;
     [SerializeField] private float slideDuration = 1f;
     [SerializeField] private float slideCooldown = 0.5f;
 

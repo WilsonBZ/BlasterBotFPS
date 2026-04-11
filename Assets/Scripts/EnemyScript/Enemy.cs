@@ -71,6 +71,11 @@ public class Enemy : BaseEnemy, IDamageable
     private float[] steeringWeights;
     private Vector3 steeringMoveDir;
 
+    // Steering throttle — only recalculate every N physics steps to halve raycast cost.
+    private int steeringPhysicsFrame = 0;
+    private const int SteeringInterval = 2;
+    private Vector3 cachedBestDir;
+
     private readonly int animMoveSpeed = Animator.StringToHash("MoveSpeed");
     private readonly int animAttack = Animator.StringToHash("Attack");
     private readonly int animTakeDamage = Animator.StringToHash("TakeDamage");
@@ -127,17 +132,16 @@ public class Enemy : BaseEnemy, IDamageable
 
     private void Update()
     {
-        // if no player reference, do nothing (prevents nullref in build) — log helps debugging
-        if (player == null)
-        {
-            return;
-        }
+        if (player == null || isExploded) return;
 
-        if (isExploded) return;
+        // CheckSphere only in FixedUpdate — removed from here to avoid double cost.
 
-        isGrounded = Physics.CheckSphere(transform.position + groundCheckOffset, groundCheckRadius, groundMask);
+        float sqrExplosionRange = config != null
+            ? config.explosionTriggerRange * config.explosionTriggerRange
+            : 0f;
 
-        if (config != null && config.canExplode && Vector3.Distance(transform.position, player.transform.position) <= config.explosionTriggerRange)
+        if (config != null && config.canExplode &&
+            (transform.position - player.transform.position).sqrMagnitude <= sqrExplosionRange)
         {
             StartCoroutine(Explode());
             return;
@@ -160,50 +164,56 @@ public class Enemy : BaseEnemy, IDamageable
     /// <summary>
     /// Context steering: casts a fan of rays, scores each direction by obstacle clearance
     /// and alignment with the player, then moves along the best direction.
+    /// Raycasts are throttled to every <see cref="SteeringInterval"/> physics frames
+    /// to halve raycast cost with multiple enemies in the scene.
     /// </summary>
     private void ApplySteeringMovement()
     {
-        Vector3 toPlayer = player.transform.position - transform.position;
+        Vector3 toPlayer  = player.transform.position - transform.position;
         toPlayer.y = 0f;
         Vector3 desiredDir = toPlayer.normalized;
 
-        float angleStep = steeringRayCount > 1
-            ? steeringFanAngle * 2f / (steeringRayCount - 1)
-            : 0f;
-
-        float bestScore = float.MinValue;
-        Vector3 bestDir = desiredDir;
-        Vector3 rayOrigin = transform.position + Vector3.up * 0.5f;
-
-        for (int i = 0; i < steeringRayCount; i++)
+        // Only re-run the expensive raycast fan on throttled frames.
+        steeringPhysicsFrame++;
+        if (steeringPhysicsFrame >= SteeringInterval)
         {
-            float angle = -steeringFanAngle + angleStep * i;
-            Vector3 candidate = Quaternion.AngleAxis(angle, Vector3.up) * desiredDir;
+            steeringPhysicsFrame = 0;
 
-            // Interest: how much does this direction point at the player?
-            float interest = Vector3.Dot(candidate, desiredDir);
+            float angleStep = steeringRayCount > 1
+                ? steeringFanAngle * 2f / (steeringRayCount - 1)
+                : 0f;
 
-            // Danger: reduce score if the ray hits an obstacle.
-            float danger = 0f;
-            if (Physics.Raycast(rayOrigin, candidate, out RaycastHit hit, steeringRayLength, steeringObstacleMask))
+            float  bestScore = float.MinValue;
+            Vector3 bestDir  = desiredDir;
+            Vector3 rayOrigin = transform.position + Vector3.up * 0.5f;
+
+            for (int i = 0; i < steeringRayCount; i++)
             {
-                // Closer obstacle = higher danger penalty.
-                danger = 1f - (hit.distance / steeringRayLength);
+                float angle = -steeringFanAngle + angleStep * i;
+                Vector3 candidate = Quaternion.AngleAxis(angle, Vector3.up) * desiredDir;
+
+                float interest = Vector3.Dot(candidate, desiredDir);
+                float danger   = 0f;
+
+                if (Physics.Raycast(rayOrigin, candidate, out RaycastHit hit, steeringRayLength, steeringObstacleMask))
+                    danger = 1f - (hit.distance / steeringRayLength);
+
+                float score = interest - danger;
+                steeringWeights[i] = score;
+
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestDir   = candidate;
+                }
             }
 
-            float score = interest - danger;
-            steeringWeights[i] = score;
-
-            if (score > bestScore)
-            {
-                bestScore = score;
-                bestDir = candidate;
-            }
+            cachedBestDir = bestDir;
         }
 
-        steeringMoveDir = Vector3.Lerp(steeringMoveDir, bestDir, Time.fixedDeltaTime * 8f);
-        Vector3 target = rb.position + steeringMoveDir * runtimeMoveSpeed * Time.fixedDeltaTime;
-        target.y = rb.position.y;
+        steeringMoveDir = Vector3.Lerp(steeringMoveDir, cachedBestDir, Time.fixedDeltaTime * 8f);
+        Vector3 target  = rb.position + steeringMoveDir * runtimeMoveSpeed * Time.fixedDeltaTime;
+        target.y        = rb.position.y;
         rb.MovePosition(target);
     }
 

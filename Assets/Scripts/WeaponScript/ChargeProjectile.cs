@@ -73,8 +73,11 @@ public class ChargeProjectile : MonoBehaviour
 
         playerLayer = LayerMask.NameToLayer("Player");
 
-        // Ignore all Player-layer colliders at the physics matrix level.
-        Physics.IgnoreLayerCollision(gameObject.layer, playerLayer, true);
+        // NOTE: Player ↔ PlayerProjectile layer collision ignore must be set
+        // in Edit > Project Settings > Physics (Layer Collision Matrix).
+        // Do NOT call Physics.IgnoreLayerCollision() here — it permanently
+        // mutates the global matrix every time a projectile spawns and can
+        // silently disable collisions between unrelated layers.
     }
 
     private void Start()
