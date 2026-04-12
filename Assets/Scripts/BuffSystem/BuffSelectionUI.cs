@@ -22,6 +22,11 @@ public class BuffSelectionUI : MonoBehaviour
     [Tooltip("Optional card prefab. Needs Image (root), Image child 'Icon', Text child 'Name', Text child 'Description'. Leave null to build cards at runtime.")]
     [SerializeField] private GameObject cardPrefab;
 
+    [Header("Card Display Mode")]
+    [Tooltip("When enabled: BuffData.cardSprite fills the entire card face and all text/icon children are hidden. " +
+             "Falls back to classic icon+text mode per-card if cardSprite is null on that buff.")]
+    [SerializeField] private bool useCardSpriteMode = false;
+
     [Header("Header")]
     [SerializeField] private TextMeshProUGUI headerText;
 
@@ -100,15 +105,52 @@ public class BuffSelectionUI : MonoBehaviour
 
     private void PopulateCard(GameObject card, BuffData buff, int index)
     {
-        // Store reference so PickCardByIndex can retrieve the buff
+        // Always store reference so PickCardByIndex can retrieve the buff.
         BuffCardData meta = card.GetComponent<BuffCardData>() ?? card.AddComponent<BuffCardData>();
         meta.Buff = buff;
 
-        // Rarity tint on root Image
-        Image bg = card.GetComponent<Image>();
-        if (bg != null) bg.color = RarityColor(buff.weight);
+        // Click handler — common to both modes.
+        Button btn = card.GetComponent<Button>() ?? card.AddComponent<Button>();
+        btn.onClick.RemoveAllListeners();
+        int captured = index;
+        btn.onClick.AddListener(() => PickCardByIndex(captured));
 
-        // Icon
+        // ── Card-sprite mode ──────────────────────────────────────────────────
+        // Use buff.cardSprite as the full card face if the mode is active and
+        // a sprite is actually assigned on this buff. Falls back to classic mode.
+        bool showAsCardSprite = useCardSpriteMode && buff.cardSprite != null;
+
+        if (showAsCardSprite)
+        {
+            // Root image becomes the card artwork; no rarity tint is applied
+            // because the sprite itself carries the visual identity.
+            Image bg = card.GetComponent<Image>();
+            if (bg != null)
+            {
+                bg.sprite              = buff.cardSprite;
+                bg.color               = Color.white;
+                bg.type                = Image.Type.Simple;
+                bg.preserveAspect      = false;
+            }
+
+            // Hide all text and icon children — the artwork is the card.
+            SetCardChildrenVisible(card, false);
+            return;
+        }
+
+        // ── Classic icon + text mode ──────────────────────────────────────────
+        // Rarity tint on root Image.
+        Image bgClassic = card.GetComponent<Image>();
+        if (bgClassic != null)
+        {
+            bgClassic.sprite = null;
+            bgClassic.color  = RarityColor(buff.weight);
+        }
+
+        // Make sure children are visible when switching back from card-sprite mode.
+        SetCardChildrenVisible(card, true);
+
+        // Icon.
         Image icon = card.transform.Find("Icon")?.GetComponent<Image>();
         if (icon != null)
         {
@@ -116,24 +158,25 @@ public class BuffSelectionUI : MonoBehaviour
             if (buff.icon != null) icon.sprite = buff.icon;
         }
 
-        // Name
+        // Name.
         TextMeshProUGUI nameText = card.transform.Find("Name")?.GetComponent<TextMeshProUGUI>();
         if (nameText != null) nameText.text = buff.buffName;
 
-        // Description
+        // Description.
         TextMeshProUGUI descText = card.transform.Find("Description")?.GetComponent<TextMeshProUGUI>();
         if (descText != null)
             descText.text = buff.effect != null ? buff.effect.GetDescription() : buff.description;
 
-        // Keyboard shortcut badge
+        // Keyboard shortcut badge.
         TextMeshProUGUI shortcutText = card.transform.Find("Shortcut")?.GetComponent<TextMeshProUGUI>();
         if (shortcutText != null) shortcutText.text = $"[{index + 1}]";
+    }
 
-        // Click
-        Button btn = card.GetComponent<Button>() ?? card.AddComponent<Button>();
-        btn.onClick.RemoveAllListeners();
-        int captured = index;
-        btn.onClick.AddListener(() => PickCardByIndex(captured));
+    /// <summary>Shows or hides all direct children of the card root.</summary>
+    private static void SetCardChildrenVisible(GameObject card, bool visible)
+    {
+        foreach (Transform child in card.transform)
+            child.gameObject.SetActive(visible);
     }
 
     /// <summary>Builds a complete card GameObject purely from code (no prefab needed).</summary>
@@ -146,7 +189,9 @@ public class BuffSelectionUI : MonoBehaviour
         RectTransform cardRt = card.AddComponent<RectTransform>();
         cardRt.sizeDelta = new Vector2(220f, 310f);
 
-        card.AddComponent<Image>(); // tinted by PopulateCard
+        // Root image: used as rarity tint (classic) or full card art (card-sprite mode).
+        Image bg          = card.AddComponent<Image>();
+        bg.raycastTarget  = true;
 
         Button btn = card.AddComponent<Button>();
         ColorBlock cb = ColorBlock.defaultColorBlock;
@@ -154,7 +199,7 @@ public class BuffSelectionUI : MonoBehaviour
         cb.pressedColor     = new Color(0.6f, 0.6f, 0.6f, 1f);
         btn.colors = cb;
 
-        // Icon
+        // Icon — only used in classic mode; hidden in card-sprite mode.
         GameObject iconGO = new GameObject("Icon");
         iconGO.transform.SetParent(card.transform, false);
         RectTransform iconRt = iconGO.AddComponent<RectTransform>();
