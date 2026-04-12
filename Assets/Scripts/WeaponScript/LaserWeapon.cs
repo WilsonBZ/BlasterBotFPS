@@ -33,8 +33,14 @@ public class LaserWeapon : ModularWeapon
     [SerializeField] private Color beamColorInner = new Color(1f, 0.85f, 0.3f, 1f);
     [SerializeField] private Color beamColorOuter = new Color(1f, 0.4f, 0.0f, 0.6f);
 
-    [Header("Impact VFX")]
-    [Tooltip("Optional particle system that plays at the beam's hit point.")]
+    [Header("Beam Pulse")]
+    [Tooltip("Diameter oscillation amplitude while held, as a fraction of beamStartWidth.")]
+    [SerializeField] private float pulseAmplitude = 0.25f;
+    [Tooltip("Oscillations per second for the cylinder diameter pulse.")]
+    [SerializeField] private float pulseFrequency = 6f;
+
+    [Header("VFX")]
+    [Tooltip("ParticleSystem under FiringPoint that plays at the world-space hit point.")]
     [SerializeField] private ParticleSystem impactParticles;
 
     [Header("Energy")]
@@ -45,47 +51,76 @@ public class LaserWeapon : ModularWeapon
     [Tooltip("Seconds from trigger-press to full damage. Beam appears immediately but deals 0→full damage over this window.")]
     [SerializeField] private float warmUpDuration = 0.25f;
 
+    [Header("Vibration")]
+    [Tooltip("Peak positional shake magnitude on the weapon mesh while the beam is active.")]
+    [SerializeField] private float vibrationAmplitude = 0.004f;
+    [Tooltip("Speed of the Perlin-noise vibration cycle.")]
+    [SerializeField] private float vibrationSpeed = 55f;
+
+    [Header("Laser Audio")]
+    [Tooltip("Played once when the beam first fires. Overwrites any previous init sound in progress.")]
+    [SerializeField] private AudioClip laserInitClip;
+    [Tooltip("Looped continuously while the beam is held. Fades out after releasing.")]
+    [SerializeField] private AudioClip laserLoopClip;
+    [Tooltip("Dedicated AudioSource for the one-shot init sound.")]
+    [SerializeField] private AudioSource laserInitSource;
+    [Tooltip("Dedicated AudioSource for the looping beam sound. Set Loop = true in the Inspector.")]
+    [SerializeField] private AudioSource laserLoopSource;
+    [Tooltip("Seconds for the loop to fade from full volume to silent after releasing fire.")]
+    [SerializeField] private float loopFadeOutDuration = 0.35f;
+
     // ─── Private ───────────────────────────────────────────────────────────────
 
-    // 3-D cylinder beam objects.
     private MeshRenderer cylinderCore;
     private MeshRenderer cylinderOuter;
 
     // Unity's built-in cylinder mesh: 2 units tall, 1 unit diameter, Y-axis aligned.
-    private const float CylinderHalfHeight = 1f; // half of the 2-unit default height
-    private const float CylinderDiameter   = 1f; // default diameter in local space
+    private const float CylinderHalfHeight = 1f;
 
-    private bool isFiring;
-    private int lastFireFrame = -1;   // frame TryFire was last called
+    // Vibration state.
+    private Vector3 vibrationBaseLocalPos;
+    private bool    vibrationBaseCached;
+    private float   vibrationSeedX;
+    private float   vibrationSeedZ;
+
+    private bool  isFiring;
+    private int   lastFireFrame = -1;
     private float warmUpTimer;
+    private bool  beamWasActive; // true if beam was active on the previous frame
 
     private IDamageable currentTarget;
-    private float damageAccumulator;
+    private float       damageAccumulator;
+
+    // Audio state.
+    private float     loopTargetVolume;   // volume the loop is trying to reach
+    private Coroutine loopFadeCoroutine;  // running fade-out, cancelled on re-fire
 
     // ─── Unity ────────────────────────────────────────────────────────────────
 
     private void Awake()
     {
         BuildCylinders();
+
+        // Random seed so each weapon instance vibrates on its own Perlin track.
+        vibrationSeedX = Random.Range(0f, 100f);
+        vibrationSeedZ = Random.Range(0f, 100f);
     }
 
     /// <summary>
-    /// LateUpdate runs after all Update calls, including ArmMount360.Update which
-    /// triggers TryFire. If TryFire wasn't called this frame, shut the beam off.
+    /// LateUpdate runs after ArmMount360.Update which calls TryFire.
+    /// If TryFire wasn't called this frame, the beam is released.
     /// </summary>
     private void LateUpdate()
     {
         if (lastFireFrame != Time.frameCount)
-        {
             StopBeam();
-        }
     }
 
-    // ─── ModularWeapon overrides ───────────────────────────────────────────────
+    // ─── ModularWeapon override ────────────────────────────────────────────────
 
     /// <summary>
     /// Called every frame Fire1 is held and this weapon is centred.
-    /// Drains energy per-second instead of per-shot, and drives the beam.
+    /// Drains energy per-second instead of per-shot.
     /// </summary>
     public override bool TryFire(ArmBattery battery, Camera playerCamera, float centerMultiplier = 1f)
     {
@@ -96,7 +131,6 @@ public class LaserWeapon : ModularWeapon
             return false;
         }
 
-        // Stamp the frame so LateUpdate knows TryFire ran this frame.
         lastFireFrame = Time.frameCount;
         isFiring      = true;
 
@@ -113,33 +147,62 @@ public class LaserWeapon : ModularWeapon
     {
         if (firePoint == null) return;
 
-        // Resolve aim direction.
-        Vector3 origin    = firePoint.position;
-        Vector3 direction = firePoint.forward;
+        // ── Aim direction ──────────────────────────────────────────────────────
+        // Cast from the camera so close-range enemies that fall inside the
+        // muzzle offset cone are never skipped. The visual beam still starts
+        // at firePoint — only the physics origin moves to the camera.
+        Vector3 castOrigin;
+        Vector3 direction;
 
         if (IsCenter && useCrosshairWhenCentered && playerCamera != null)
         {
             Ray aimRay = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-            direction = aimRay.direction;
-            origin    = firePoint.position; // keep origin at muzzle
+            castOrigin = aimRay.origin;
+            direction  = aimRay.direction;
+        }
+        else
+        {
+            castOrigin = firePoint.position;
+            direction  = firePoint.forward;
         }
 
-        // Raycast / sphere cast for hit.
-        bool didHit;
+        // ── Physics cast — camera-space origin guarantees near-enemy hits ──────
+        bool       didHit;
         RaycastHit hit;
 
         if (beamRadius > 0f)
-            didHit = Physics.SphereCast(origin, beamRadius, direction, out hit, range, hitMask, QueryTriggerInteraction.Ignore);
+            didHit = Physics.SphereCast(castOrigin, beamRadius, direction, out hit, range, hitMask, QueryTriggerInteraction.Ignore);
         else
-            didHit = Physics.Raycast(origin, direction, out hit, range, hitMask, QueryTriggerInteraction.Ignore);
+            didHit = Physics.Raycast(castOrigin, direction, out hit, range, hitMask, QueryTriggerInteraction.Ignore);
 
-        Vector3 endPoint = didHit ? hit.point : origin + direction * range;
+        // Visual beam anchors at the muzzle; end point from the cast.
+        Vector3 visualStart = firePoint.position;
+        Vector3 endPoint    = didHit ? hit.point : castOrigin + direction * range;
 
-        // Update visuals.
-        UpdateCylinders(origin, endPoint, warmUpRatio);
+        // ── Cylinder pulse — sine-wave on diameter while fully charged ─────────
+        float pulse = warmUpRatio >= 1f
+            ? Mathf.Sin(Time.time * pulseFrequency * Mathf.PI * 2f) * pulseAmplitude
+            : 0f;
+
+        UpdateCylinders(visualStart, endPoint, warmUpRatio, pulse);
         SetCylindersActive(true);
 
-        // Impact particles.
+        // ── Gun vibration ──────────────────────────────────────────────────────
+        ApplyVibration(warmUpRatio);
+
+        // ── Audio ──────────────────────────────────────────────────────────────
+        if (!beamWasActive)
+            OnBeamStart();
+        else
+            TickBeamAudio();
+
+        beamWasActive = true;
+
+        // ── Muzzle particles — continuous while firing ─────────────────────────
+        if (muzzleFlash != null && !muzzleFlash.isPlaying)
+            muzzleFlash.Play();
+
+        // ── Impact particles — teleport to hit point each frame ────────────────
         if (impactParticles != null)
         {
             if (didHit)
@@ -154,7 +217,7 @@ public class LaserWeapon : ModularWeapon
             }
         }
 
-        // Damage tick.
+        // ── Damage tick ────────────────────────────────────────────────────────
         if (didHit && warmUpRatio >= 1f)
         {
             IDamageable damageable = hit.collider.GetComponent<IDamageable>()
@@ -162,12 +225,11 @@ public class LaserWeapon : ModularWeapon
 
             if (damageable != null)
             {
-                float dps = damagePerSecond * centerMultiplier;
-                damageAccumulator += dps * Time.deltaTime;
+                damageAccumulator += damagePerSecond * centerMultiplier * Time.deltaTime;
 
                 if (damageAccumulator >= 1f)
                 {
-                    float toApply = Mathf.Floor(damageAccumulator);
+                    float toApply     = Mathf.Floor(damageAccumulator);
                     damageAccumulator -= toApply;
                     damageable.TakeDamage(toApply, hit.point, -direction);
                 }
@@ -181,36 +243,167 @@ public class LaserWeapon : ModularWeapon
         {
             damageAccumulator = 0f;
         }
-
-        // Muzzle loop sound — play one-shot per-frame would be wrong; use a looping AudioSource.
-        if (audioSource != null && shootSound != null && !audioSource.isPlaying)
-            audioSource.Play();
     }
 
     private void StopBeam()
     {
+        if (beamWasActive)
+            OnBeamStop();
+
         SetCylindersActive(false);
+        StopVibration();
+
         warmUpTimer       = 0f;
         damageAccumulator = 0f;
         currentTarget     = null;
+        beamWasActive     = false;
 
-        if (impactParticles != null && impactParticles.isPlaying)
-            impactParticles.Stop();
+        if (muzzleFlash     != null && muzzleFlash.isPlaying)     muzzleFlash.Stop();
+        if (impactParticles != null && impactParticles.isPlaying) impactParticles.Stop();
+    }
 
-        if (audioSource != null && audioSource.isPlaying)
-            audioSource.Stop();
+    // ─── Laser audio ──────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Called on the first frame the beam becomes active.
+    /// Plays the init one-shot (overwriting any still-playing copy) then
+    /// starts or resumes the loop with full volume.
+    /// </summary>
+    private void OnBeamStart()
+    {
+        // Init sound — Stop first so rapid re-triggers never stack copies.
+        if (laserInitSource != null && laserInitClip != null)
+        {
+            laserInitSource.Stop();
+            laserInitSource.clip = laserInitClip;
+            laserInitSource.loop = false;
+            laserInitSource.Play();
+        }
+
+        // Cancel any in-progress fade and restore loop to full volume.
+        if (loopFadeCoroutine != null)
+        {
+            StopCoroutine(loopFadeCoroutine);
+            loopFadeCoroutine = null;
+        }
+
+        if (laserLoopSource != null && laserLoopClip != null)
+        {
+            if (!laserLoopSource.isPlaying)
+            {
+                laserLoopSource.clip   = laserLoopClip;
+                laserLoopSource.loop   = true;
+                laserLoopSource.volume = 1f;
+                laserLoopSource.Play();
+            }
+            else
+            {
+                // Was already playing (fade-out cancelled) — snap volume back.
+                laserLoopSource.volume = 1f;
+            }
+
+            loopTargetVolume = 1f;
+        }
+    }
+
+    /// <summary>
+    /// Called every frame while the beam continues to fire (after the first).
+    /// Guards against the loop stopping for any external reason.
+    /// </summary>
+    private void TickBeamAudio()
+    {
+        if (laserLoopSource != null && laserLoopClip != null && !laserLoopSource.isPlaying)
+        {
+            laserLoopSource.clip   = laserLoopClip;
+            laserLoopSource.loop   = true;
+            laserLoopSource.volume = loopTargetVolume;
+            laserLoopSource.Play();
+        }
+    }
+
+    /// <summary>
+    /// Called on the first frame the beam stops.
+    /// Stops the init sound immediately and begins the fade-out coroutine for the loop.
+    /// </summary>
+    private void OnBeamStop()
+    {
+        if (laserInitSource != null && laserInitSource.isPlaying)
+            laserInitSource.Stop();
+
+        if (laserLoopSource != null && laserLoopSource.isPlaying && loopFadeOutDuration > 0f)
+        {
+            if (loopFadeCoroutine != null) StopCoroutine(loopFadeCoroutine);
+            loopFadeCoroutine = StartCoroutine(FadeOutLoop(loopFadeOutDuration));
+        }
+        else if (laserLoopSource != null)
+        {
+            laserLoopSource.Stop();
+        }
+    }
+
+    /// <summary>
+    /// Fades the loop AudioSource volume from its current value to 0 over
+    /// <paramref name="duration"/> seconds, then stops it.
+    /// If <see cref="OnBeamStart"/> is called during the fade it cancels this
+    /// coroutine and the loop continues at full volume — no copy ever stacks.
+    /// </summary>
+    private IEnumerator FadeOutLoop(float duration)
+    {
+        float startVolume = laserLoopSource.volume;
+        float elapsed     = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            laserLoopSource.volume = Mathf.Lerp(startVolume, 0f, elapsed / duration);
+            yield return null;
+        }
+
+        laserLoopSource.volume = 0f;
+        laserLoopSource.Stop();
+        loopFadeCoroutine = null;
+    }
+
+    // ─── Vibration ────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Perlin-noise positional shake applied to recoilRoot while firing.
+    /// Magnitude scales with warmUpRatio so it ramps in during warm-up.
+    /// </summary>
+    private void ApplyVibration(float warmUpRatio)
+    {
+        if (recoilRoot == null || vibrationAmplitude <= 0f) return;
+
+        // Cache the neutral position once so StopVibration can restore it cleanly.
+        if (!vibrationBaseCached)
+        {
+            vibrationBaseLocalPos = recoilRoot.localPosition;
+            vibrationBaseCached   = true;
+        }
+
+        float t      = Time.time * vibrationSpeed;
+        float shakeX = (Mathf.PerlinNoise(vibrationSeedX + t, 0f)  - 0.5f) * 2f;
+        float shakeZ = (Mathf.PerlinNoise(0f, vibrationSeedZ + t)  - 0.5f) * 2f;
+        float mag    = vibrationAmplitude * warmUpRatio;
+
+        recoilRoot.localPosition = vibrationBaseLocalPos
+            + recoilRoot.right   * (shakeX * mag)
+            + recoilRoot.forward * (shakeZ * mag * 0.4f);
+    }
+
+    private void StopVibration()
+    {
+        if (recoilRoot != null && vibrationBaseCached)
+            recoilRoot.localPosition = vibrationBaseLocalPos;
+
+        vibrationBaseCached = false;
     }
 
     // ─── Cylinder helpers ─────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Creates core and outer cylinder GameObjects using the built-in cylinder mesh.
-    /// No CapsuleCollider is added — we strip it immediately to keep it purely visual.
-    /// </summary>
     private void BuildCylinders()
     {
-        // Grab the shared cylinder mesh from a temporary primitive and discard the GO.
-        GameObject temp = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        GameObject temp   = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         Mesh cylinderMesh = temp.GetComponent<MeshFilter>().sharedMesh;
         Destroy(temp);
 
@@ -225,62 +418,50 @@ public class LaserWeapon : ModularWeapon
 
     private MeshRenderer CreateCylinderMesh(string goName, Mesh mesh, Material mat)
     {
-        GameObject go    = new GameObject(goName);
-        go.layer         = LayerMask.NameToLayer("Ignore Raycast");
+        GameObject go = new GameObject(goName);
+        go.layer      = LayerMask.NameToLayer("Ignore Raycast");
         go.transform.SetParent(transform, false);
 
-        MeshFilter mf    = go.AddComponent<MeshFilter>();
-        mf.sharedMesh    = mesh;
+        go.AddComponent<MeshFilter>().sharedMesh = mesh;
 
-        MeshRenderer mr             = go.AddComponent<MeshRenderer>();
-        mr.sharedMaterial           = mat;
-        mr.shadowCastingMode        = UnityEngine.Rendering.ShadowCastingMode.Off;
-        mr.receiveShadows           = false;
-        mr.lightProbeUsage          = UnityEngine.Rendering.LightProbeUsage.Off;
-        mr.reflectionProbeUsage     = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+        MeshRenderer mr         = go.AddComponent<MeshRenderer>();
+        mr.sharedMaterial       = mat;
+        mr.shadowCastingMode    = UnityEngine.Rendering.ShadowCastingMode.Off;
+        mr.receiveShadows       = false;
+        mr.lightProbeUsage      = UnityEngine.Rendering.LightProbeUsage.Off;
+        mr.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
 
         return mr;
     }
 
     /// <summary>
-    /// Positions and scales both cylinders so they span from <paramref name="start"/>
-    /// to <paramref name="end"/> every frame.
-    ///
-    /// Unity's cylinder mesh is 2 units tall and 1 unit in diameter along its local Y axis.
-    /// To align it with an arbitrary world direction:
-    ///   - Position  = midpoint of start→end
-    ///   - Rotation  = FromToRotation(Vector3.up, direction)
-    ///   - Scale.Y   = length / 2   (halved because the mesh is 2 units, not 1)
-    ///   - Scale.XZ  = desired diameter (mesh is already 1 unit wide)
+    /// Positions and scales both cylinders to span <paramref name="start"/>→<paramref name="end"/>.
+    /// Unity cylinder: 2 units tall (scale.Y = length/2), 1 unit wide (scale.XZ = diameter).
+    /// <paramref name="pulse"/> adds a sine-wave modulation to diameter once fully charged.
     /// </summary>
-    private void UpdateCylinders(Vector3 start, Vector3 end, float warmUpRatio)
+    private void UpdateCylinders(Vector3 start, Vector3 end, float warmUpRatio, float pulse)
     {
-        Vector3 delta     = end - start;
-        float   length    = delta.magnitude;
+        Vector3 delta  = end - start;
+        float   length = delta.magnitude;
         if (length < 0.001f) return;
 
-        Vector3    midPoint  = start + delta * 0.5f;
-        Quaternion rotation  = Quaternion.FromToRotation(Vector3.up, delta / length);
+        Vector3    mid      = start + delta * 0.5f;
+        Quaternion rotation = Quaternion.FromToRotation(Vector3.up, delta / length);
+        float      halfLen  = length / (CylinderHalfHeight * 2f);
 
-        // Diameter grows from 0 to full during warm-up.
-        float coreDiameter  = Mathf.Lerp(0f, beamStartWidth,        warmUpRatio);
-        float outerDiameter = Mathf.Lerp(0f, beamStartWidth * 3.5f, warmUpRatio);
-        float halfLength    = length / (CylinderHalfHeight * 2f);   // = length / 2
+        float coreDiam  = Mathf.Max(0f, Mathf.Lerp(0f, beamStartWidth,        warmUpRatio) + beamStartWidth        * pulse);
+        float outerDiam = Mathf.Max(0f, Mathf.Lerp(0f, beamStartWidth * 3.5f, warmUpRatio) + beamStartWidth * 3.5f * pulse * 0.6f);
 
         if (cylinderCore != null)
         {
-            Transform t     = cylinderCore.transform;
-            t.position      = midPoint;
-            t.rotation      = rotation;
-            t.localScale    = new Vector3(coreDiameter, halfLength, coreDiameter);
+            cylinderCore.transform.SetPositionAndRotation(mid, rotation);
+            cylinderCore.transform.localScale = new Vector3(coreDiam, halfLen, coreDiam);
         }
 
         if (cylinderOuter != null)
         {
-            Transform t     = cylinderOuter.transform;
-            t.position      = midPoint;
-            t.rotation      = rotation;
-            t.localScale    = new Vector3(outerDiameter, halfLength, outerDiameter);
+            cylinderOuter.transform.SetPositionAndRotation(mid, rotation);
+            cylinderOuter.transform.localScale = new Vector3(outerDiam, halfLen, outerDiam);
         }
     }
 
@@ -290,10 +471,6 @@ public class LaserWeapon : ModularWeapon
         if (cylinderOuter != null && cylinderOuter.enabled != active) cylinderOuter.enabled = active;
     }
 
-    /// <summary>
-    /// Generates a minimal URP Unlit beam material at runtime.
-    /// Used only when no material asset is assigned in the Inspector.
-    /// </summary>
     private static Material CreateBeamMaterial(Color color, bool opaque)
     {
         Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
@@ -305,13 +482,13 @@ public class LaserWeapon : ModularWeapon
 
         if (opaque)
         {
-            mat.SetFloat("_Surface", 0f); // Opaque
+            mat.SetFloat("_Surface", 0f);
         }
         else
         {
             mat.SetFloat("_Surface", 1f); // Transparent
             mat.SetFloat("_Blend",   4f); // Additive
-            mat.SetFloat("_Cull",    0f); // Off — visible from inside the cylinder
+            mat.SetFloat("_Cull",    0f); // Off
             mat.renderQueue = 3001;
         }
 
@@ -320,6 +497,15 @@ public class LaserWeapon : ModularWeapon
 
     private void OnDisable()
     {
+        if (loopFadeCoroutine != null)
+        {
+            StopCoroutine(loopFadeCoroutine);
+            loopFadeCoroutine = null;
+        }
+
+        if (laserInitSource != null) laserInitSource.Stop();
+        if (laserLoopSource != null) laserLoopSource.Stop();
+
         StopBeam();
         isFiring = false;
     }
