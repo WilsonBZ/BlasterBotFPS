@@ -125,7 +125,7 @@ MonoBehaviour:
     m_Bits: 0
   spawnForwardOffset: 1
   range: 45
-  damagePerSecond: 40
+  damagePerSecond: 60
   beamRadius: 0.12
   beamStartWidth: 0.12
   hitMask:
@@ -143,7 +143,7 @@ MonoBehaviour:
   vibrationAmplitude: 0.004
   vibrationSpeed: 55
   laserInitClip: {fileID: 8300000, guid: 559c9a88dd7ec91478acb46b6beeface, type: 3}
-  laserLoopClip: {fileID: 8300000, guid: ffcd9756452c9734ca32c9e1fe5333c2, type: 3}
+  laserLoopClip: {fileID: 0}
   laserInitSource: {fileID: 6833627853405647854}
   laserLoopSource: {fileID: 8655450545607863211}
   loopFadeOutDuration: 0.35

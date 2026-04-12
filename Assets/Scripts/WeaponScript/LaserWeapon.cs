@@ -148,31 +148,43 @@ public class LaserWeapon : ModularWeapon
         if (firePoint == null) return;
 
         // ── Aim direction ──────────────────────────────────────────────────────
-        Vector3 origin    = firePoint.position;
-        Vector3 direction = firePoint.forward;
+        // Cast from the camera so close-range enemies that fall inside the
+        // muzzle offset cone are never skipped. The visual beam still starts
+        // at firePoint — only the physics origin moves to the camera.
+        Vector3 castOrigin;
+        Vector3 direction;
 
         if (IsCenter && useCrosshairWhenCentered && playerCamera != null)
         {
-            direction = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f)).direction;
+            Ray aimRay = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+            castOrigin = aimRay.origin;
+            direction  = aimRay.direction;
+        }
+        else
+        {
+            castOrigin = firePoint.position;
+            direction  = firePoint.forward;
         }
 
-        // ── Physics cast ───────────────────────────────────────────────────────
+        // ── Physics cast — camera-space origin guarantees near-enemy hits ──────
         bool       didHit;
         RaycastHit hit;
 
         if (beamRadius > 0f)
-            didHit = Physics.SphereCast(origin, beamRadius, direction, out hit, range, hitMask, QueryTriggerInteraction.Ignore);
+            didHit = Physics.SphereCast(castOrigin, beamRadius, direction, out hit, range, hitMask, QueryTriggerInteraction.Ignore);
         else
-            didHit = Physics.Raycast(origin, direction, out hit, range, hitMask, QueryTriggerInteraction.Ignore);
+            didHit = Physics.Raycast(castOrigin, direction, out hit, range, hitMask, QueryTriggerInteraction.Ignore);
 
-        Vector3 endPoint = didHit ? hit.point : origin + direction * range;
+        // Visual beam anchors at the muzzle; end point from the cast.
+        Vector3 visualStart = firePoint.position;
+        Vector3 endPoint    = didHit ? hit.point : castOrigin + direction * range;
 
         // ── Cylinder pulse — sine-wave on diameter while fully charged ─────────
         float pulse = warmUpRatio >= 1f
             ? Mathf.Sin(Time.time * pulseFrequency * Mathf.PI * 2f) * pulseAmplitude
             : 0f;
 
-        UpdateCylinders(origin, endPoint, warmUpRatio, pulse);
+        UpdateCylinders(visualStart, endPoint, warmUpRatio, pulse);
         SetCylindersActive(true);
 
         // ── Gun vibration ──────────────────────────────────────────────────────
