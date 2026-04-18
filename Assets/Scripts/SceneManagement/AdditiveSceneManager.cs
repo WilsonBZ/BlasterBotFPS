@@ -1,3 +1,5 @@
+using System;
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -12,6 +14,13 @@ using UnityEngine.SceneManagement;
 public class AdditiveSceneManager : MonoBehaviour
 {
     public static AdditiveSceneManager Instance { get; private set; }
+
+    /// <summary>
+    /// Fired after every full scene reset (floor advance or death restart).
+    /// <see cref="ElevatorInteraction"/> subscribes to reset its one-shot guard
+    /// so the trigger works again on every subsequent floor.
+    /// </summary>
+    public static event Action OnRoomsReset;
 
     [Header("Room Sequence")]
     [Tooltip("Ordered list of room scene names to load (must be added to Build Settings).")]
@@ -149,6 +158,10 @@ public class AdditiveSceneManager : MonoBehaviour
 
         isTransitioning = false;
         Debug.Log("[AdditiveSceneManager] Reset complete. Rooms reloaded from index 0.");
+
+        // Notify persistent scene objects (ElevatorInteraction, SceneExitTrigger, etc.)
+        // that rooms have been reset so they clear their one-shot guards.
+        OnRoomsReset?.Invoke();
     }
 
     /// <summary>
