@@ -4285,7 +4285,7 @@ MonoBehaviour:
   panel: {fileID: 170245719}
   cardContainer: {fileID: 907797934}
   cardPrefab: {fileID: 0}
-  useCardSpriteMode: 1
+  useCardSpriteMode: 0
   headerText: {fileID: 893602601}
   slideFromY: -320
   slideInDuration: 0.22
@@ -53352,13 +53352,17 @@ PrefabInstance:
       propertyPath: m_RenderPostProcessing
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 5980704478153131098, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
+      propertyPath: uiStartAngle
+      value: 59.5
+      objectReference: {fileID: 0}
     - target: {fileID: 7447763791105419869, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
       propertyPath: zooming_Effect
       value: 
       objectReference: {fileID: 1856889720}
     - target: {fileID: 7989019073467235861, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.36
+      value: -1.7
       objectReference: {fileID: 0}
     - target: {fileID: 7989019073467235861, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
       propertyPath: m_LocalPosition.y
@@ -53366,7 +53370,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7989019073467235861, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 30.95
+      value: 31.21
       objectReference: {fileID: 0}
     - target: {fileID: 7989019073467235861, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
       propertyPath: m_LocalRotation.w
@@ -53396,11 +53400,16 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8100893344490511265, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 9124126111620742720, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
       propertyPath: m_Name
       value: PlayerCharacter 2 1
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 8100893344490511265, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
