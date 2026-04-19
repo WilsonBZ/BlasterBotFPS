@@ -53353,20 +53353,36 @@ PrefabInstance:
       value: 60
       objectReference: {fileID: 0}
     - target: {fileID: 5980704478153131098, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
+      propertyPath: trackThickness
+      value: 0.018
+      objectReference: {fileID: 0}
+    - target: {fileID: 5980704478153131098, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
       propertyPath: backgroundColor.a
       value: 0.68235296
       objectReference: {fileID: 0}
     - target: {fileID: 5980704478153131098, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
       propertyPath: backgroundColor.b
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5980704478153131098, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
       propertyPath: backgroundColor.g
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5980704478153131098, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
       propertyPath: backgroundColor.r
-      value: 1
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5980704478153131098, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
+      propertyPath: trackRadiusOffset
+      value: 0.03
+      objectReference: {fileID: 0}
+    - target: {fileID: 5980704478153131098, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
+      propertyPath: gapDegreesBetweenArcs
+      value: 9.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6248657232089886997, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
+      propertyPath: m_Layer
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 7447763791105419869, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
       propertyPath: zooming_Effect
