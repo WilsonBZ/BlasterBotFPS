@@ -1,100 +1,94 @@
-using System.Collections;
 using UnityEngine;
-using TMPro;
+using UnityEngine.InputSystem;
 
 /// <summary>
-/// Placed on the ElevatorTrigger zone. When the player enters the collider a world-space
-/// canvas appears showing "Press E to reach next floor". Pressing E triggers the door
-/// open animation and calls FloorProgressManager.AdvanceFloor(), which handles scene
-/// reload, buff re-application, and 1.2x enemy scaling for the next floor.
-/// The door closes automatically if the player exits the zone without pressing E.
+/// Attach to the ElevatorTrigger box collider.
+/// Player enters → prompt shows. Player presses Interact (E) → AdvanceFloor().
+/// Resets automatically via AdditiveSceneManager.OnRoomsReset each floor.
 /// </summary>
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Collider))]
 public class ElevatorInteraction : MonoBehaviour
 {
-    [Header("Door")]
-    [Tooltip("The ElevatorCylinderDoor controller in the scene.")]
-    public ElevatorCylinderDoor cylinderDoor;
-
     [Header("Prompt UI")]
-    [Tooltip("World-space Canvas that holds the 'Press E' prompt.")]
     public Canvas promptCanvas;
-    [Tooltip("TextMeshPro label inside the canvas. Auto-resolved if canvas is assigned.")]
-    public TMP_Text promptLabel;
-    [Tooltip("Text displayed when inside the trigger zone.")]
-    public string promptText = "[E] Next Floor";
 
     private bool playerInside = false;
     private bool hasActivated = false;
-
-    private const KeyCode InteractKey = KeyCode.E;
+    private InputAction interactAction;
 
     private void Awake()
     {
         GetComponent<Collider>().isTrigger = true;
 
         if (promptCanvas != null)
-        {
-            // Resolve text component automatically.
-            if (promptLabel == null)
-                promptLabel = promptCanvas.GetComponentInChildren<TMP_Text>();
-
             promptCanvas.gameObject.SetActive(false);
-        }
+
+        if (InputSystem.actions != null)
+            interactAction = InputSystem.actions.FindAction("Player/Interact", throwIfNotFound: false);
+
+        if (interactAction == null)
+            Debug.LogWarning("[ElevatorInteraction] 'Player/Interact' action not found.");
     }
 
-    private void Update()
+    private void OnEnable()
     {
-        if (!playerInside || hasActivated) return;
+        if (interactAction != null)
+            interactAction.performed += OnInteract;
 
-        if (Input.GetKeyDown(InteractKey))
-            StartCoroutine(ActivateElevator());
+        AdditiveSceneManager.OnRoomsReset += ResetState;
+    }
+
+    private void OnDisable()
+    {
+        if (interactAction != null)
+            interactAction.performed -= OnInteract;
+
+        AdditiveSceneManager.OnRoomsReset -= ResetState;
     }
 
     private void OnTriggerEnter(Collider other)
     {
         if (hasActivated || !other.CompareTag("Player")) return;
-
         playerInside = true;
-        ShowPrompt(true);
+        SetPrompt(true);
+        Debug.Log("[ElevatorInteraction] Player entered trigger.");
     }
 
     private void OnTriggerExit(Collider other)
     {
         if (!other.CompareTag("Player")) return;
-
         playerInside = false;
-        ShowPrompt(false);
-
-        // Close the door again if the player walked in but didn't press E.
-        if (!hasActivated && cylinderDoor != null)
-            cylinderDoor.Close();
+        SetPrompt(false);
     }
 
-    private void ShowPrompt(bool visible)
+    /// <summary>Fires on Interact press. Calls AdvanceFloor immediately.</summary>
+    private void OnInteract(InputAction.CallbackContext ctx)
     {
-        if (promptCanvas == null) return;
-        promptCanvas.gameObject.SetActive(visible);
+        if (!playerInside || hasActivated) return;
 
-        if (visible && promptLabel != null)
-            promptLabel.text = promptText;
-    }
-
-    private IEnumerator ActivateElevator()
-    {
         hasActivated = true;
-        ShowPrompt(false);
+        SetPrompt(false);
+        Debug.Log("[ElevatorInteraction] Advancing floor.");
 
-        // Open the door first and give it a moment to animate.
-        if (cylinderDoor != null)
-        {
-            cylinderDoor.Open();
-            yield return new WaitForSeconds(1.5f);
-        }
+        if (FloorProgressManager.Instance != null)
+            FloorProgressManager.Instance.AdvanceFloor();
+        else
+            Debug.LogError("[ElevatorInteraction] FloorProgressManager.Instance is NULL — is it in the scene?");
+    }
 
-        // FloorProgressManager.AdvanceFloor() handles scene reload, buff re-apply,
-        // and applying the 1.2x enemy multiplier via ApplyDifficultyToSpawners.
-        FloorProgressManager.Instance?.AdvanceFloor();
+    /// <summary>Re-arms the trigger after each floor reset.</summary>
+    private void ResetState()
+    {
+        hasActivated = false;
+        playerInside = false;
+        SetPrompt(false);
+        Debug.Log("[ElevatorInteraction] Reset for new floor.");
+    }
+
+    private void SetPrompt(bool visible)
+    {
+        if (promptCanvas != null)
+            promptCanvas.gameObject.SetActive(visible);
     }
 }

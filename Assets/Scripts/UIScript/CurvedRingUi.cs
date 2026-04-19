@@ -128,20 +128,21 @@ public class CurvedRingUI : MonoBehaviour
 
         float batteryStart = uiStartAngle;
         float healthStart  = uiStartAngle + batteryArcDegrees + gapDegreesBetweenArcs;
+        float batteryEndPosition = batteryStart + batteryArcDegrees;
 
         Color hColor = GetArcColor(healthPercent,  healthColor)  * new Color(1, 1, 1, CriticalAlpha(healthPercent));
         Color bColor = GetArcColor(batteryPercent, batteryColor) * new Color(1, 1, 1, CriticalAlpha(batteryPercent));
 
         DrawArc(healthRenderer,  healthPercent,  uiRadius, segments, healthArcDegrees,  healthStart,  hColor);
-        DrawArc(batteryRenderer, batteryPercent, uiRadius, segments, batteryArcDegrees, batteryStart, bColor);
+        DrawArc(batteryRenderer, batteryPercent, uiRadius, segments, -batteryArcDegrees, batteryEndPosition, bColor);
 
         UpdateTicks(healthTicks,  healthPercent,  hColor);
         UpdateTicks(batteryTicks, batteryPercent, bColor);
-
+        
         if (showEndCap)
         {
             UpdateEndCap(healthCap,  healthPercent,  healthArcDegrees,  healthStart,  hColor);
-            UpdateEndCap(batteryCap, batteryPercent, batteryArcDegrees, batteryStart, bColor);
+            UpdateEndCap(batteryCap, batteryPercent, -batteryArcDegrees, batteryEndPosition, bColor);
         }
 
         if (numericText != null)
