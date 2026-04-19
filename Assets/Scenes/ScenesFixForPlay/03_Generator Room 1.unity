@@ -53354,11 +53354,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5980704478153131098, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
       propertyPath: uiStartAngle
-      value: 60
+      value: 49.8
       objectReference: {fileID: 0}
     - target: {fileID: 5980704478153131098, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
       propertyPath: trackThickness
       value: 0.018
+      objectReference: {fileID: 0}
+    - target: {fileID: 5980704478153131098, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
+      propertyPath: healthArcDegrees
+      value: 28
       objectReference: {fileID: 0}
     - target: {fileID: 5980704478153131098, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
       propertyPath: backgroundColor.a
@@ -53377,16 +53381,44 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5980704478153131098, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
+      propertyPath: batteryArcDegrees
+      value: 28
+      objectReference: {fileID: 0}
+    - target: {fileID: 5980704478153131098, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
       propertyPath: trackRadiusOffset
       value: 0.03
       objectReference: {fileID: 0}
     - target: {fileID: 5980704478153131098, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
       propertyPath: gapDegreesBetweenArcs
-      value: 9.5
+      value: 23.8
       objectReference: {fileID: 0}
     - target: {fileID: 6248657232089886997, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
       propertyPath: m_Layer
       value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 7083641450669329519, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7083641450669329519, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.057
+      objectReference: {fileID: 0}
+    - target: {fileID: 7083641450669329519, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.403569
+      objectReference: {fileID: 0}
+    - target: {fileID: 7083641450669329519, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0.91494924
+      objectReference: {fileID: 0}
+    - target: {fileID: 7083641450669329519, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7083641450669329519, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: -227.603
       objectReference: {fileID: 0}
     - target: {fileID: 7447763791105419869, guid: c54d4485c02dc474481b758d256b36a6, type: 3}
       propertyPath: zooming_Effect
